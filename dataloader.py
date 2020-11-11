@@ -42,8 +42,14 @@ def image_bboxes(annotations):
     return list(image_bboxes.values())
 
 
-def parse_image_function(example_proto):
-    return tf.io.parse_single_example(example_proto, image_feature_description)
+def preprocess_data(example):
+    """
+    Applies preprocessing step to a single example
+    """
+    sample = tf.io.parse_single_example(example, image_feature_description)
+    image = tf.image.decode_image(sample["image"])
+    bbox = tf.decode_raw(sample["bbox"])
+    label = sample["label"].numpy()
 
 
 def image_example(image_string, label, bbox):
