@@ -19,27 +19,15 @@ def int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 
+def float_array_feature(value):
+    return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+
+
 image_feature_description = {
     "bbox": tf.io.FixedLenFeature([], tf.string),
-    "label": tf.io.FixedLenFeature([], tf.int64),
+    "label": tf.io.FixedLenFeature([], tf.string),
     "image": tf.io.FixedLenFeature([], tf.string),
 }
-
-
-def image_bboxes(annotations):
-    image_bboxes = {}
-    for item in annotations:
-        img_id = item.get("image_id")
-        if img_id in image_bboxes:
-            image_bboxes[img_id]["bbox"].append(item["bbox"])
-        else:
-            image_bboxes[img_id] = {
-                "id": img_id,
-                "bbox": [item["bbox"]],
-                "label": item["category_id"],
-            }
-
-    return list(image_bboxes.values())
 
 
 def preprocess_data(example):
@@ -54,12 +42,29 @@ def preprocess_data(example):
     return image, bbox, label
 
 
+def image_bboxes(annotations):
+    image_bboxes = {}
+    for item in annotations:
+        img_id = item.get("image_id")
+        if img_id in image_bboxes:
+            image_bboxes[img_id]["bbox"].append(item["bbox"])
+            image_bboxes[img_id]["label"].append(item["category_id"])
+        else:
+            image_bboxes[img_id] = {
+                "id": img_id,
+                "bbox": [item["bbox"]],
+                "label": [item["category_id"],],
+            }
+
+    return list(image_bboxes.values())
+
+
 def image_example(image_string, label, bbox):
     image_shape = tf.image.decode_jpeg(image_string).shape
 
     feature = {
         "bbox": bytes_feature(bbox),
-        "label": int64_feature(label),
+        "label": bytes_feature(label),
         "image": bytes_feature(image_string),
     }
 
@@ -73,7 +78,9 @@ def write_tfrecords(data, file_path, train_dir):
             ipath = "{}images/{}.png".format(train_dir, img_info["id"])
             image_string = open(ipath, "rb").read()
             tf_example = image_example(
-                image_string, img_info["label"], np.array(img_info["bbox"]).tobytes()
+                image_string,
+                np.array(img_info["label"]).tobytes(),
+                np.array(img_info["bbox"]).tobytes(),
             )
             writer.write(tf_example.SerializeToString())
             count += 1
