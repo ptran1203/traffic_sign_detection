@@ -1,5 +1,7 @@
 import cv2
 import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):

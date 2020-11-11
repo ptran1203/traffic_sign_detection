@@ -48,8 +48,10 @@ def preprocess_data(example):
     """
     sample = tf.io.parse_single_example(example, image_feature_description)
     image = tf.image.decode_image(sample["image"])
-    bbox = tf.decode_raw(sample["bbox"])
-    label = sample["label"].numpy()
+    bbox = tf.io.decode_raw(sample["bbox"], out_type=tf.int64)
+    label = sample["label"]
+
+    return image, bbox, label
 
 
 def image_example(image_string, label, bbox):
