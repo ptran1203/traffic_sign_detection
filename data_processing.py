@@ -58,7 +58,7 @@ def preprocess_data(example):
     # bbox = utils.swap_xy(bbox)
 
     # image, bbox = utils.random_flip_horizontal(image, bbox)
-    image, image_shape, _ = utils.resize_and_pad_image(image)
+    image, image_shape, _ = resize_and_pad_image(image)
 
     scale_w, scale_h = image_shape[1] / 1622, image_shape[0] / 626
     bbox = tf.stack(
