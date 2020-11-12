@@ -1,6 +1,12 @@
 import tensorflow as tf
 import numpy as np
-from utils import random_flip_horizontal, resize_and_pad_image, swap_xy, convert_to_xywh
+from utils import (
+    random_flip_horizontal,
+    resize_and_pad_image,
+    swap_xy,
+    convert_to_xywh,
+    convert_to_corners,
+)
 
 
 def bytes_feature(value):
@@ -52,6 +58,7 @@ def preprocess_data(example):
     image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
 
+    bbox = convert_to_corners(bbox)
     bbox = swap_xy(bbox)
     bbox = tf.stack(
         [
