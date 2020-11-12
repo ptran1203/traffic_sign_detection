@@ -29,15 +29,34 @@ image_feature_description = {
     "image": tf.io.FixedLenFeature([], tf.string),
 }
 
+# Internal
+_H, _W = 626, 1622
+H, W = 512, 1024
+ratio_w = _W / W
+offset_h = (_H - H) // 2
+
 
 def preprocess_data(example):
     """
     Applies preprocessing step to a single example
     """
     sample = tf.io.parse_single_example(example, image_feature_description)
-    image = tf.image.decode_image(sample["image"])
-    bbox = tf.io.decode_raw(sample["bbox"], out_type=tf.int64)
-    label = sample["label"]
+    image = tf.image.decode_png(sample["image"])
+    image = tf.image.resize_with_pad(image, H, W)
+    bbox = tf.cast(
+        tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
+    )
+    bbox = tf.reshape(bbox, (-1, 4))
+    bbox = tf.stack(
+        [
+            (bbox[:, 0] / ratio_w),
+            (bbox[:, 1] / ratio_w) + offset_h,
+            (bbox[:, 2] / ratio_w),
+            (bbox[:, 3] / ratio_w),
+        ],
+        axis=-1,
+    )
+    label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
 
     return image, bbox, label
 
