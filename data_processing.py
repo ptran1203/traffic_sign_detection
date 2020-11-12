@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from utils import random_flip_horizontal, resize_and_pad_image, swap_xy, convert_to_xywh
 
 
 def bytes_feature(value):
@@ -47,15 +48,21 @@ def preprocess_data(example):
         tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
     )
     bbox = tf.reshape(bbox, (-1, 4))
+
+    image, bbox = random_flip_horizontal(image, bbox)
+    image, image_shape, _ = resize_and_pad_image(image)
+
+    bbox = swap_xy(bbox)
     bbox = tf.stack(
         [
-            (bbox[:, 0] / ratio_w),
-            (bbox[:, 1] / ratio_w) + offset_h,
-            (bbox[:, 2] / ratio_w),
-            (bbox[:, 3] / ratio_w),
+            bbox[:, 0] * image_shape[1],
+            bbox[:, 1] * image_shape[0],
+            bbox[:, 2] * image_shape[1],
+            bbox[:, 3] * image_shape[0],
         ],
         axis=-1,
     )
+    bbox = convert_to_xywh(bbox)
     label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
 
     return image, bbox, label
@@ -72,7 +79,7 @@ def image_bboxes(annotations):
             image_bboxes[img_id] = {
                 "id": img_id,
                 "bbox": [item["bbox"]],
-                "label": [item["category_id"],],
+                "label": [item["category_id"]],
             }
 
     return list(image_bboxes.values())
