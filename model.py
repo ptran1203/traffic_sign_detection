@@ -241,6 +241,7 @@ class DecodePredictions(tf.keras.layers.Layer):
     ):
         super(DecodePredictions, self).__init__(**kwargs)
         self.num_classes = num_classes
+        self.verbose = verbose
         self.confidence_threshold = confidence_threshold
         self.nms_iou_threshold = nms_iou_threshold
         self.max_detections_per_class = max_detections_per_class
@@ -270,6 +271,7 @@ class DecodePredictions(tf.keras.layers.Layer):
         cls_predictions = tf.nn.sigmoid(predictions[:, :, 4:])
         boxes = self._decode_box_predictions(anchor_boxes[None, ...], box_predictions)
         if self.verbose:
+            print(box_predictions)
             print(boxes)
         return tf.image.combined_non_max_suppression(
             tf.expand_dims(boxes, axis=2),
