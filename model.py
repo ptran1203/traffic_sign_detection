@@ -236,6 +236,7 @@ class DecodePredictions(tf.keras.layers.Layer):
         max_detections_per_class=100,
         max_detections=100,
         box_variance=[0.1, 0.1, 0.2, 0.2],
+        verbose=0,
         **kwargs
     ):
         super(DecodePredictions, self).__init__(**kwargs)
@@ -268,7 +269,8 @@ class DecodePredictions(tf.keras.layers.Layer):
         box_predictions = predictions[:, :, :4]
         cls_predictions = tf.nn.sigmoid(predictions[:, :, 4:])
         boxes = self._decode_box_predictions(anchor_boxes[None, ...], box_predictions)
-
+        if self.verbose:
+            print(boxes)
         return tf.image.combined_non_max_suppression(
             tf.expand_dims(boxes, axis=2),
             cls_predictions,

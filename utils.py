@@ -206,3 +206,16 @@ def visualize_detections(
         )
     plt.show()
     return ax
+
+
+def try_ignore_error(func, *argv):
+    """
+    Try and ignore error
+    @params:
+      + func: function
+      + *argv: arguments of func
+    """
+    try:
+        func(*argv)
+    except Exception as e:
+        print("WARN: ", e)
