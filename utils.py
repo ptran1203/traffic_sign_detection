@@ -117,6 +117,20 @@ def swap_xy(boxes):
     return tf.stack([boxes[:, 1], boxes[:, 0], boxes[:, 3], boxes[:, 2]], axis=-1)
 
 
+def to_xyxy(bbox):
+    return tf.stack(
+        [bbox[:, 0], bbox[:, 1], bbox[:, 2] + bbox[:, 0], bbox[:, 3] + bbox[:, 1],],
+        axis=-1,
+    )
+
+
+def normalize_bbox(bbox):
+    h, w = 1622, 626
+    return tf.stack(
+        [bbox[:, 0] / h, bbox[:, 1] / w, bbox[:, 2] / h, bbox[:, 3] / w,], axis=-1,
+    )
+
+
 def convert_to_xywh(boxes):
     """Changes the box format to center, width and height.
 

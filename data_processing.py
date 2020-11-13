@@ -6,6 +6,8 @@ from utils import (
     swap_xy,
     convert_to_xywh,
     convert_to_corners,
+    to_xyxy,
+    normalize_bbox,
 )
 
 
@@ -52,26 +54,16 @@ def preprocess_data(example):
     bbox = tf.cast(
         tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
     )
-    bbox = tf.reshape(bbox, (-1, 4))
+    bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
+    bbox = normalize_bbox(bbox)
 
-    # bbox = utils.convert_to_corners(bbox)
-    # bbox = utils.swap_xy(bbox)
-
-    # image, bbox = utils.random_flip_horizontal(image, bbox)
+    image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
-
-    scale_w, scale_h = image_shape[1] / 1622, image_shape[0] / 626
+    w, h = image_shape[0], image_shape[1]
     bbox = tf.stack(
-        [
-            bbox[:, 0] * scale_w,
-            bbox[:, 1] * scale_h,
-            bbox[:, 2] * scale_w,
-            bbox[:, 3] * scale_h,
-        ],
-        axis=-1,
+        [bbox[:, 0] * h, bbox[:, 1] * w, bbox[:, 2] * h, bbox[:, 3] * w], axis=-1,
     )
-
-    # bbox = utils.convert_to_xywh(bbox)
+    bbox = convert_to_xywh(bbox)
     label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
 
     return image, bbox, label
