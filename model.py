@@ -7,7 +7,7 @@ from tensorflow import keras
 def get_backbone():
     """Builds ResNet50 with pre-trained imagenet weights"""
     backbone = keras.applications.ResNet50(
-        include_top=False, input_shape=[None, None, 3]
+        include_top=False, input_shape=[None, None, 3], weights=None,
     )
     c3_output, c4_output, c5_output = [
         backbone.get_layer(layer_name).output
