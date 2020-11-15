@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
+import data_augmentation as augmentation
 from utils import (
-    random_flip_horizontal,
     resize_and_pad_image,
     swap_xy,
     convert_to_xywh,
@@ -57,7 +57,11 @@ def preprocess_data(example):
     bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
     bbox = normalize_bbox(bbox)
 
-    image, bbox = random_flip_horizontal(image, bbox)
+    # Data augmentation
+    image, bbox = augmentation.random_flip_horizontal(image, bbox)
+    image = augmentation.random_adjust_brightness(image)
+    image = augmentation.random_adjust_contrast(image)
+
     image, image_shape, _ = resize_and_pad_image(image)
     w, h = image_shape[0], image_shape[1]
     bbox = tf.stack(
