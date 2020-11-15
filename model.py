@@ -4,18 +4,25 @@ from utils import convert_to_corners, compute_iou
 from tensorflow import keras
 
 
-def get_backbone():
-    """Builds ResNet50 with pre-trained imagenet weights"""
-    backbone = keras.applications.ResNet50(
-        include_top=False, input_shape=[None, None, 3], weights=None,
-    )
-    c3_output, c4_output, c5_output = [
-        backbone.get_layer(layer_name).output
-        for layer_name in ["conv3_block4_out", "conv4_block6_out", "conv5_block3_out"]
-    ]
-    return keras.Model(
-        inputs=[backbone.inputs], outputs=[c3_output, c4_output, c5_output]
-    )
+def get_backbone(name="resnet50"):
+    if "resnet" in name:
+        if name == "resnet50":
+            backbone = keras.applications.ResNet50(
+                include_top=False, input_shape=[None, None, 3], weights=None,
+            )
+        elif name == "resnet101":
+            backbone = keras.applications.ResNet101(
+                include_top=False, input_shape=[None, None, 3], weights=None,
+            )
+        c3_output, c4_output, c5_output = [
+            backbone.get_layer(layer_name).output
+            for layer_name in ["conv3_block4_out", "conv4_block6_out", "conv5_block3_out"]
+        ]
+        return keras.Model(
+            inputs=[backbone.inputs], outputs=[c3_output, c4_output, c5_output]
+        )
+    else:
+        raise("Unsupported model name {}".format(name))
 
 
 class FeaturePyramid(keras.layers.Layer):
@@ -27,9 +34,9 @@ class FeaturePyramid(keras.layers.Layer):
         Currently supports ResNet50 only.
     """
 
-    def __init__(self, backbone=None, **kwargs):
+    def __init__(self, backbone="resnet50", **kwargs):
         super(FeaturePyramid, self).__init__(name="FeaturePyramid", **kwargs)
-        self.backbone = backbone if backbone else get_backbone()
+        self.backbone = get_backbone(backbone)
         self.conv_c3_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
         self.conv_c4_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
         self.conv_c5_1x1 = keras.layers.Conv2D(256, 1, 1, "same")

@@ -113,3 +113,5 @@ def write_tfrecords(data, file_path, train_dir):
             count += 1
             if count % 100 == 0:
                 print(count, "/", len(data))
+
+
