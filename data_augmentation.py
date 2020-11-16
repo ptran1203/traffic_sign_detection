@@ -1,4 +1,14 @@
 import tensorflow as tf
+import numpy as np
+
+size = 8
+kernel_motion_blur = np.zeros((size, size))
+kernel_motion_blur[int((size - 1) / 2), :] = np.ones(size)
+kernel_motion_blur = kernel_motion_blur / size
+kernel_motion_blur = np.expand_dims(kernel_motion_blur, axis=-1)
+kernel_motion_blur = np.repeat(kernel_motion_blur, repeats=3, axis=-1)
+kernel_motion_blur = np.expand_dims(kernel_motion_blur, axis=-1)
+kernel_motion_blur = tf.cast(kernel_motion_blur, tf.float32)
 
 
 def random_flip_horizontal(image, boxes):
@@ -37,8 +47,12 @@ def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
 def random_gaussian_blur(img):
     if tf.random.uniform(()) > 0.5:
         img = tf.cast(img, dtype=tf.float32)
-        blur = _gaussian_kernel(7, 3, 3, img.dtype)
-        img = tf.nn.depthwise_conv2d(img[None], blur, [1, 1, 1, 1], "SAME")
+        if tf.random.uniform(()) > 0.5:
+            kernel = _gaussian_kernel(7, 3, 3, img.dtype)
+        else:
+            kernel = kernel_motion_blur
+        img = tf.nn.depthwise_conv2d(img[None], kernel, [1, 1, 1, 1], "SAME")
+
         return tf.cast(img[0], dtype=tf.uint8)
 
     return img
