@@ -57,7 +57,8 @@ def preprocess_data(example):
     image = augmentation.random_adjust_contrast(image)
     image = augmentation.random_gaussian_blur(image)
 
-    w, h = 626, 1622
+    image, image_shape, _ = resize_and_pad_image(image)
+    w, h = image_shape[0], image_shape[1]
     bbox = tf.stack(
         [bbox[:, 0] * h, bbox[:, 1] * w, bbox[:, 2] * h, bbox[:, 3] * w], axis=-1,
     )
