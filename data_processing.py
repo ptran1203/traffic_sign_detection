@@ -38,12 +38,6 @@ image_feature_description = {
     "image": tf.io.FixedLenFeature([], tf.string),
 }
 
-# Internal
-_H, _W = 626, 1622
-H, W = 512, 1024
-ratio_w = _W / W
-offset_h = (_H - H) // 2
-
 
 def preprocess_data(example):
     """
@@ -63,8 +57,7 @@ def preprocess_data(example):
     image = augmentation.random_adjust_contrast(image)
     image = augmentation.random_gaussian_blur(image)
 
-    image, image_shape, _ = resize_and_pad_image(image)
-    w, h = image_shape[0], image_shape[1]
+    w, h = 626, 1622
     bbox = tf.stack(
         [bbox[:, 0] * h, bbox[:, 1] * w, bbox[:, 2] * h, bbox[:, 3] * w], axis=-1,
     )
