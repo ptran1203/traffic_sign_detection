@@ -5,24 +5,30 @@ from tensorflow import keras
 
 
 def get_backbone(name="resnet50"):
+    """Supported backbone: resnet50, resnet101, densenet121"""
+    backbone = None
     if "resnet" in name:
         if name == "resnet50":
-            backbone = keras.applications.ResNet50(
-                include_top=False, input_shape=[None, None, 3], weights=None,
-            )
+            backbone = keras.applications.ResNet50
         elif name == "resnet101":
-            backbone = keras.applications.ResNet101(
-                include_top=False, input_shape=[None, None, 3], weights=None,
-            )
-        c3_output, c4_output, c5_output = [
-            backbone.get_layer(layer_name).output
-            for layer_name in ["conv3_block4_out", "conv4_block6_out", "conv5_block3_out"]
-        ]
-        return keras.Model(
-            inputs=[backbone.inputs], outputs=[c3_output, c4_output, c5_output]
-        )
-    else:
-        raise("Unsupported model name {}".format(name))
+            backbone = keras.applications.ResNet101
+
+        output_layers = ["conv3_block4_out", "conv4_block6_out", "conv5_block3_out"]
+
+    elif "densenet" in name:
+        if name == "densenet121":
+            backbone =  keras.applications.DenseNet121
+            output_layers = ["pool3_conv", "pool4_conv", "relu"]
+
+    backbone_model = backbone(include_top=False, input_shape=[None, None, 3], weights=None)
+    c3_output, c4_output, c5_output = [
+        backbone_model.get_layer(layer_name).output
+        for layer_name in output_layers
+    ]
+    return keras.Model(
+        inputs=[backbone_model.inputs], outputs=[c3_output, c4_output, c5_output]
+    )
+        
 
 
 class FeaturePyramid(keras.layers.Layer):
@@ -277,9 +283,6 @@ class DecodePredictions(tf.keras.layers.Layer):
         box_predictions = predictions[:, :, :4]
         cls_predictions = tf.nn.sigmoid(predictions[:, :, 4:])
         boxes = self._decode_box_predictions(anchor_boxes[None, ...], box_predictions)
-        if self.verbose:
-            print(box_predictions)
-            print(boxes)
         return tf.image.combined_non_max_suppression(
             tf.expand_dims(boxes, axis=2),
             cls_predictions,
