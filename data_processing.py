@@ -61,6 +61,7 @@ def preprocess_data(example):
     image, bbox = augmentation.random_flip_horizontal(image, bbox)
     image = augmentation.random_adjust_brightness(image)
     image = augmentation.random_adjust_contrast(image)
+    image = augmentation.random_gaussian_blur(image)
 
     image, image_shape, _ = resize_and_pad_image(image)
     w, h = image_shape[0], image_shape[1]
@@ -117,5 +118,4 @@ def write_tfrecords(data, file_path, train_dir):
             count += 1
             if count % 100 == 0:
                 print(count, "/", len(data))
-
 
