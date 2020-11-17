@@ -38,6 +38,11 @@ image_feature_description = {
     "image": tf.io.FixedLenFeature([], tf.string),
 }
 
+def has_small_bbox(bboxes):
+    areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+    min_val = tf.constant(650, dtype=tf.float32)
+    return tf.math.reduce_any(tf.math.less(areas, min_val))
+
 
 def preprocess_data(example):
     """
@@ -48,16 +53,22 @@ def preprocess_data(example):
     bbox = tf.cast(
         tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
     )
-    bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
-    bbox = normalize_bbox(bbox)
+    bbox_origin = to_xyxy(tf.reshape(bbox, (-1, 4)))
+    bbox = normalize_bbox(bbox_origin)
 
     # Data augmentation
     image, bbox = augmentation.random_flip_horizontal(image, bbox)
     image = augmentation.random_adjust_brightness(image)
     image = augmentation.random_adjust_contrast(image)
-    image = augmentation.random_gaussian_blur(image)
 
-    image, image_shape, _ = resize_and_pad_image(image)
+    # only blur if the bbox is large
+    if not has_small_bbox(bbox_origin):
+        image = augmentation.random_gaussian_blur(image)
+
+    max_, min_ = 2450, 864
+    image, image_shape, _ = resize_and_pad_image(
+        image, max_side=max_, min_side=min_, jitter=[min_, max_]
+    )
     w, h = image_shape[0], image_shape[1]
     bbox = tf.stack(
         [bbox[:, 0] * h, bbox[:, 1] * w, bbox[:, 2] * h, bbox[:, 3] * w], axis=-1,

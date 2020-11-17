@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import requests
+import sys
 
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
@@ -239,10 +240,19 @@ def get_confirm_token(response):
     return None
 
 
+def _print_progress(msg):
+    sys.stdout.write("\r")
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+
+
 def save_response_content(response, destination):
     CHUNK_SIZE = 32768
+    total_size = 0
 
     with open(destination, "wb") as f:
         for chunk in response.iter_content(CHUNK_SIZE):
             if chunk:  # filter out keep-alive new chunks
                 f.write(chunk)
+                total_size += CHUNK_SIZE
+                _print_progress("downloading data ... %s Mb" % (total_size / (1e6)))

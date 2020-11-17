@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-size = 8
+size = 5
 kernel_motion_blur = np.zeros((size, size))
 kernel_motion_blur[int((size - 1) / 2), :] = np.ones(size)
 kernel_motion_blur = kernel_motion_blur / size
