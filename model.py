@@ -17,7 +17,7 @@ def get_backbone(name="resnet50"):
 
     elif "densenet" in name:
         if name == "densenet121":
-            backbone =  keras.applications.DenseNet121
+            backbone = keras.applications.DenseNet121
             output_layers = ["pool3_conv", "pool4_conv", "relu"]
 
     backbone_model = backbone(include_top=False, input_shape=[None, None, 3], weights=None)
@@ -28,7 +28,6 @@ def get_backbone(name="resnet50"):
     return keras.Model(
         inputs=[backbone_model.inputs], outputs=[c3_output, c4_output, c5_output]
     )
-        
 
 
 class FeaturePyramid(keras.layers.Layer):

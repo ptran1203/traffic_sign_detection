@@ -255,4 +255,4 @@ def save_response_content(response, destination):
             if chunk:  # filter out keep-alive new chunks
                 f.write(chunk)
                 total_size += CHUNK_SIZE
-                _print_progress("downloading data ... %s Mb" % (total_size / (1e6)))
+                _print_progress("Fetching object to {} ... {:.2f} Mb".format(destination, total_size / (1e6)))
