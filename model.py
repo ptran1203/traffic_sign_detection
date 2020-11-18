@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import math
 from utils import convert_to_corners, compute_iou
 from tensorflow import keras
 
@@ -116,7 +117,7 @@ class RetinaNet(keras.Model):
         self.box_head = build_head(9 * 4, "zeros")
 
     def call(self, image, training=False):
-        features = self.fpn(image, training=training)
+        features = self.fpn(image, training=True)
         N = tf.shape(image)[0]
         cls_outputs = []
         box_outputs = []
@@ -129,6 +130,54 @@ class RetinaNet(keras.Model):
         box_outputs = tf.concat(box_outputs, axis=1)
         return tf.concat([box_outputs, cls_outputs], axis=-1)
 
+def get_slice_indices(image_width=1622, crop_size=400, overlap_size=50):
+    num_of_tile = math.ceil(image_width / crop_size)
+
+    indices = []
+
+    for i in range(num_of_tile):
+        start = max(i * crop_size - overlap_size, 0)
+        end = start + crop_size
+
+        if end > image_width:
+            end = image_width
+            start = end - crop_size
+    
+        indices.append([start, end])
+
+    return indices
+
+class CombineModel(keras.Model):
+    def __init__(self, retina_model=None, **kwargs):
+        super(RetinaNet, self).__init__(name="CombineModel", **kwargs)
+        self.retina_model = retina_model
+        self.num_classes = num_classes
+
+        prior_probability = tf.constant_initializer(-np.log((1 - 0.01) / 0.01))
+        self.cls_head = build_head(9 * num_classes, prior_probability)
+        self.box_head = build_head(9 * 4, "zeros")
+
+    def call(self, image, training=False):
+        box_preds = []
+        cls_preds = []
+        for start, end in get_slice_indices():
+            tile_image = image[:, :, start:end, :]
+            pred = self.retina_model(tile_image, training=True)
+            box_pred = pred[:, :, :4]
+            cls_pred = pred[:, :, 4:]
+            box_preds.append(box_pred)
+            cls_preds.append(cls_pred)
+
+        pred = self.retina_model(image, training=True))
+        box_pred = pred[:, :, :4]
+        cls_pred = pred[:, :, 4:]
+        box_preds.append(box_pred)
+        cls_preds.append(cls_pred)
+
+        cls_outputs = tf.concat(cls_preds, axis=1)
+        box_outputs = tf.concat(cls_preds, axis=1)
+
+        return tf.concat([box_outputs, cls_outputs], axis=-1)
 
 class AnchorBox:
     """Generates anchor boxes.
@@ -397,3 +446,22 @@ class LabelEncoder:
             labels = labels.write(i, label)
         batch_images = tf.keras.applications.resnet.preprocess_input(batch_images)
         return batch_images, labels.stack()
+
+
+def fit(model, data_gen, epochs=100):
+    import datetime
+    for e in range(epochs):
+        start = datetime.datetime.now()
+        loss_list = []
+        print("Epochs {} - ".format(e + 1), end="")
+
+        for x, y in data_gen:
+            loss = model.train_on_batch(x, y)
+            loss_list.append(loss)
+            utils._print_progress("Epochs {} - {}/{}".format(e + 1, len(loss_list), 2))
+
+        avg_loss = np.mean(np.array(loss_list))
+        print(" - loss: {} - {}".format(
+            avg_loss,
+            datetime.datetime.now() - start
+        ))
