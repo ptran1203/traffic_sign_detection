@@ -168,7 +168,7 @@ class CombineModel(keras.Model):
             box_preds.append(box_pred)
             cls_preds.append(cls_pred)
 
-        pred = self.retina_model(image, training=True))
+        pred = self.retina_model(image, training=True)
         box_pred = pred[:, :, :4]
         cls_pred = pred[:, :, 4:]
         box_preds.append(box_pred)
