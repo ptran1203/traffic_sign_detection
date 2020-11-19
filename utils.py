@@ -41,7 +41,11 @@ def draw_bbox(img, coordinates, text="face", color=(158, 0, 148)):
 
 
 def resize_and_pad_image(
-    image, min_side=800.0, max_side=1333.0, jitter=[640, 1024], stride=128.0
+    image,
+    min_side=864,
+    max_side=2450,
+    jitter=[864, 2450],
+    stride=128.0
 ):
     """Resizes and pads image while preserving aspect ratio.
 

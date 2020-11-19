@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import math
 
 size = 5
 kernel_motion_blur = np.zeros((size, size))

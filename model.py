@@ -1,8 +1,9 @@
 import tensorflow as tf
 import numpy as np
+import math
 from utils import convert_to_corners, compute_iou
+from data_processing import resize_and_pad_image
 from tensorflow import keras
-
 
 def get_backbone(name="resnet50"):
     """Supported backbone: resnet50, resnet101, densenet121"""
@@ -128,7 +129,6 @@ class RetinaNet(keras.Model):
         cls_outputs = tf.concat(cls_outputs, axis=1)
         box_outputs = tf.concat(box_outputs, axis=1)
         return tf.concat([box_outputs, cls_outputs], axis=-1)
-
 
 class AnchorBox:
     """Generates anchor boxes.
@@ -397,3 +397,11 @@ class LabelEncoder:
             labels = labels.write(i, label)
         batch_images = tf.keras.applications.resnet.preprocess_input(batch_images)
         return batch_images, labels.stack()
+
+    def encode_batch_and_tiles(self, images, boxes, cls_ids):
+        records = []
+        for img, box, cls_id in zip(images, boxes, cls_ids):
+            encoded = self.encode_batch(img, box, cls_id)
+            records.append(encoded)
+
+        return records
