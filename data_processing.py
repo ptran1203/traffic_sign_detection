@@ -138,7 +138,8 @@ def preprocess_data(example):
         bbox[:, 2] * h,
         bbox[:, 3] * w,
     ], axis=-1)
-    # bbox = convert_to_xywh(bbox)
+
+    bbox = convert_to_xywh(bbox)
     label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
 
     return image, bbox, label
