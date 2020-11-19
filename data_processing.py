@@ -9,6 +9,7 @@ from utils import (
     to_xyxy,
     normalize_bbox,
 )
+import math
 
 
 def bytes_feature(value):
@@ -126,8 +127,8 @@ def preprocess_data(example):
     image = augmentation.random_adjust_brightness(image)
     image = augmentation.random_adjust_contrast(image)
     # crop the region contain at least 1 bounding box
-    if tf.random.uniform(()) > 0.3:
-        image, bbox = random_crop(image, bbox)
+    # if tf.random.uniform(()) > 0.3:
+    image, bbox = random_crop(image, bbox)
 
     bbox = normalize_bbox(bbox)
     image, bbox = augmentation.random_flip_horizontal(image, bbox)
@@ -192,3 +193,17 @@ def write_tfrecords(data, file_path, train_dir):
             count += 1
             if count % 100 == 0:
                 print(count, "/", len(data))
+
+def get_slice_indices(img_width=1622, crop_size=400, overlap=50):
+    num_paths = math.ceil(img_width/crop_size)
+    slices = []
+    for i in range(num_paths):
+        start = max(crop_size * i - overlap, 0)
+        end = start + crop_size
+        if end > img_width:
+            start = end - img_width
+            end = img_width
+
+        slices.append([start, end])
+
+    return slices
