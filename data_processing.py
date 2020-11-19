@@ -47,12 +47,13 @@ def has_small_bbox(bboxes):
 def moved_box(box, x1, x2, y1, y2):
     x1, x2 = tf.cast(x1, tf.float32), tf.cast(x2, tf.float32)
     y1, y2 = tf.cast(y1, tf.float32), tf.cast(y2, tf.float32)
-    scale = 4.05500
+    scale_x = 4.055
+    scale_y = 4.06493506
     return tf.stack([
-        (box[:, 0] - x1) * scale,
-        (box[:, 1] - y1) * scale,
-        (box[:, 2] - x1) * scale,
-        (box[:, 3] - y1) * scale,
+        (box[:, 0] - x1) * scale_x,
+        (box[:, 1] - y1) * scale_y,
+        (box[:, 2] - x1) * scale_x,
+        (box[:, 3] - y1) * scale_y,
     ], axis=1)
 
 def random_crop(image, bbox):
@@ -107,7 +108,8 @@ def random_crop(image, bbox):
     filter = tf.where(tf.logical_not(cond))[0]
 
     bbox = moved_box(bbox, x1, x2, y1, y2)
-    return croped, tf.gather(bbox, filter)
+    bbox = tf.gather(bbox, filter)
+    return croped, bbox
 
 def preprocess_data(example):
     """
@@ -124,7 +126,7 @@ def preprocess_data(example):
     image = augmentation.random_adjust_brightness(image)
     image = augmentation.random_adjust_contrast(image)
     # crop the region contain at least 1 bounding box
-    if tf.random.uniform(()) > 0.2:
+    if tf.random.uniform(()) > 0.3:
         image, bbox = random_crop(image, bbox)
 
     bbox = normalize_bbox(bbox)
@@ -132,6 +134,7 @@ def preprocess_data(example):
 
     image, image_shape, _ = resize_and_pad_image(image, jitter=None)
     w, h = image_shape[0], image_shape[1]
+
     bbox = tf.stack([
         bbox[:, 0] * h,
         bbox[:, 1] * w,
