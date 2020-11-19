@@ -117,7 +117,7 @@ class RetinaNet(keras.Model):
         self.box_head = build_head(9 * 4, "zeros")
 
     def call(self, image, training=False):
-        features = self.fpn(image, training=training)
+        features = self.fpn(image, training=True)
         N = tf.shape(image)[0]
         cls_outputs = []
         box_outputs = []
@@ -398,10 +398,21 @@ class LabelEncoder:
         batch_images = tf.keras.applications.resnet.preprocess_input(batch_images)
         return batch_images, labels.stack()
 
-    def encode_batch_and_tiles(self, images, boxes, cls_ids):
-        records = []
-        for img, box, cls_id in zip(images, boxes, cls_ids):
-            encoded = self.encode_batch(img, box, cls_id)
-            records.append(encoded)
 
-        return records
+# def fit(model, data_gen, epochs=100):
+#     import datetime
+#     for e in range(epochs):
+#         start = datetime.datetime.now()
+#         loss_list = []
+#         print("Epochs {} - ".format(e + 1), end="")
+
+#         for x, y in data_gen:
+#             loss = model.train_on_batch(x, y)
+#             loss_list.append(loss)
+#             utils._print_progress("Epochs {} - {}/{}".format(e + 1, len(loss_list), 2))
+
+#         avg_loss = np.mean(np.array(loss_list))
+#         print(" - loss: {} - {}".format(
+#             avg_loss,
+#             datetime.datetime.now() - start
+#         ))
