@@ -44,111 +44,6 @@ def has_small_bbox(bboxes):
     min_val = tf.constant(650, dtype=tf.float32)
     return tf.math.reduce_any(tf.math.less(areas, min_val))
 
-
-def moved_box(box, x1, x2, y1, y2):
-    x1, x2 = tf.cast(x1, tf.float32), tf.cast(x2, tf.float32)
-    y1, y2 = tf.cast(y1, tf.float32), tf.cast(y2, tf.float32)
-    scale_x = 4.055
-    scale_y = 4.06493506
-    return tf.stack([
-        (box[:, 0] - x1) * scale_x,
-        (box[:, 1] - y1) * scale_y,
-        (box[:, 2] - x1) * scale_x,
-        (box[:, 3] - y1) * scale_y,
-    ], axis=1)
-
-def random_crop(image, bbox):
-    idx = tf.random.uniform((), 0, tf.shape(bbox)[0], tf.int32)
-    selected_box = bbox[idx]
-    x1, y1, x2, y2 = tf.unstack(selected_box, axis=0)
-    x1 = tf.cast(x1, tf.int32)
-    x2 = tf.cast(x2, tf.int32)
-    y1 = tf.cast(y1, tf.int32)
-    y2 = tf.cast(y2, tf.int32)
-    w, h = x2 - x1, y2 - y1
-    width = 400
-    heigh = 154
-
-    x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
-    y1 = tf.random.uniform((), y1 - heigh, y1, dtype=tf.int32)
-
-    if tf.less(x1, 0):
-        x1 = 0
-
-    if tf.less(y1, 0):
-        y1 = 0
-
-    if tf.greater(x1 + width, 1622):
-        x1 = 1622 - width
-
-    if tf.greater(y1 + heigh, 626):
-        y1 = 626 - heigh
-
-    if tf.greater(y2, y1 + heigh):
-        y1 = y1 + (y2 - (y1 + heigh))
-
-    if tf.greater(x2, x1 + width):
-        x1 = x1 + (x2 - (x1 + width))
-
-    croped = tf.slice(image, [y1, x1, 0], [heigh, width, 3])
-
-    x1 = tf.cast(x1, tf.float32)
-    y1 = tf.cast(y1, tf.float32)
-    width = tf.cast(width, tf.float32)
-    heigh = tf.cast(heigh, tf.float32)
-
-    # filter out boxes that not lie inside the cropped image
-    x1_b, y1_b, x2_b, y2_b = tf.unstack(bbox, axis=1)
-    # 1. x1 of box > cropped width
-    # 2. x2 of box < cropped width
-    case1 = tf.logical_or(tf.less(x1_b, x1), tf.greater(x2_b, x1 + width + 10))
-    # 3. y1 of box> cropped height
-    # 4. y2 of box> cropped height
-    case2 = tf.logical_or(tf.less(y1_b, y1), tf.greater(y2_b, y1 + heigh + 10))
-    cond = tf.logical_or(case1, case2)
-    filter = tf.where(tf.logical_not(cond))[0]
-
-    bbox = moved_box(bbox, x1, x2, y1, y2)
-    bbox = tf.gather(bbox, filter)
-    return croped, bbox
-
-def preprocess_data(example):
-    """
-    Applies preprocessing step to a single example
-    """
-    sample = tf.io.parse_single_example(example, image_feature_description)
-    image = tf.image.decode_png(sample["image"])
-    bbox = tf.cast(
-        tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
-    )
-    bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
-
-    # Data augmentation
-    image = augmentation.random_adjust_brightness(image)
-    image = augmentation.random_adjust_contrast(image)
-    # crop the region contain at least 1 bounding box
-    # if tf.random.uniform(()) > 0.3:
-    image, bbox = random_crop(image, bbox)
-
-    bbox = normalize_bbox(bbox)
-    image, bbox = augmentation.random_flip_horizontal(image, bbox)
-
-    image, image_shape, _ = resize_and_pad_image(image, jitter=None)
-    w, h = image_shape[0], image_shape[1]
-
-    bbox = tf.stack([
-        bbox[:, 0] * h,
-        bbox[:, 1] * w,
-        bbox[:, 2] * h,
-        bbox[:, 3] * w,
-    ], axis=-1)
-
-    bbox = convert_to_xywh(bbox)
-    label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
-
-    return image, bbox, label
-
-
 def image_bboxes(annotations):
     image_bboxes = {}
     for item in annotations:
@@ -194,16 +89,137 @@ def write_tfrecords(data, file_path, train_dir):
             if count % 100 == 0:
                 print(count, "/", len(data))
 
-def get_slice_indices(img_width=1622, crop_size=400, overlap=50):
-    num_paths = math.ceil(img_width/crop_size)
-    slices = []
-    for i in range(num_paths):
-        start = max(crop_size * i - overlap, 0)
-        end = start + crop_size
-        if end > img_width:
-            start = end - img_width
-            end = img_width
+class DataProcessing:
+    def __init__(self, width=400, height=154):
+        self.origin_width = 1622
+        self.origin_height = 626
+        self.width = width
+        self.height = height
+        self.scale_x = self.origin_width / self.width
+        self.scale_y = self.origin_height / self.height
+        self.convert_xywh = True
 
-        slices.append([start, end])
+    def set_width(self, width):
+        self.width = width
 
-    return slices
+    def set_height(self, height):
+        self.height = height
+
+    def moved_box(self, box, x1, x2, y1, y2):
+        x1, x2 = tf.cast(x1, tf.float32), tf.cast(x2, tf.float32)
+        y1, y2 = tf.cast(y1, tf.float32), tf.cast(y2, tf.float32)
+        return tf.stack([
+            (box[:, 0] - x1) * self.scale_x,
+            (box[:, 1] - y1) * self.scale_y,
+            (box[:, 2] - x1) * self.scale_x,
+            (box[:, 3] - y1) * self.scale_y,
+        ], axis=1)
+
+    def random_crop(self, image, bbox):
+        width = self.width
+        height = self.height
+        idx = tf.random.uniform((), 0, tf.shape(bbox)[0], tf.int32)
+        selected_box = bbox[idx]
+        x1, y1, x2, y2 = tf.unstack(selected_box, axis=0)
+        x1 = tf.cast(x1, tf.int32)
+        x2 = tf.cast(x2, tf.int32)
+        y1 = tf.cast(y1, tf.int32)
+        y2 = tf.cast(y2, tf.int32)
+        # w, h = x2 - x1, y2 - y1
+
+        x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
+        y1 = tf.random.uniform((), y1 - height, y1, dtype=tf.int32)
+
+        if tf.less(x1, 0):
+            x1 = 0
+
+        if tf.less(y1, 0):
+            y1 = 0
+
+        if tf.greater(x1 + width, self.origin_width):
+            x1 = self.origin_width - width
+
+        if tf.greater(y1 + height, self.origin_height):
+            y1 = self.origin_height - height
+
+        if tf.greater(y2, y1 + height):
+            y1 = y1 + (y2 - (y1 + height))
+
+        if tf.greater(x2, x1 + width):
+            x1 = x1 + (x2 - (x1 + width))
+
+        # [height, width, channels]
+        cropped = tf.slice(image, [y1, x1, 0], [height, width, 3])
+
+        x1 = tf.cast(x1, tf.float32)
+        y1 = tf.cast(y1, tf.float32)
+        width = tf.cast(width, tf.float32)
+        height = tf.cast(height, tf.float32)
+
+        # filter out boxes that not lie inside the cropped image
+        x1_b, y1_b, x2_b, y2_b = tf.unstack(bbox, axis=1)
+        # 1. x1 of box > cropped width
+        # 2. x2 of box < cropped width
+        case1 = tf.logical_and(tf.greater(x1_b, x1), tf.less(x2_b, x1 + width + 10))
+        # 3. y1 of box> cropped height
+        # 4. y2 of box> cropped height
+        case2 = tf.logical_and(tf.greater(y1_b, y1), tf.less(y2_b, y1 + height + 10))
+        cond = tf.logical_and(case1, case2)
+        positive_mask = tf.where(cond)
+
+        bbox = self.moved_box(bbox, x1, x2, y1, y2)
+        bbox = tf.gather_nd(bbox, positive_mask)
+
+        return cropped, bbox
+
+    def get_slice_indices(self):
+        num_paths = math.ceil(self.origin_width / self.width)
+        slices = []
+        for i in range(num_paths):
+            start = max(self.width * i - self.overlap_x, 0)
+            end = start + self.width
+            if end > self.origin_width:
+                start = end - self.origin_width
+                end = self.origin_width
+
+            slices.append([start, end])
+
+        return slices
+
+    def preprocess_data(self, example):
+        """
+        Applies preprocessing step to a single example
+        """
+        sample = tf.io.parse_single_example(example, image_feature_description)
+        image = tf.image.decode_png(sample["image"])
+        bbox = tf.cast(
+            tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
+        )
+        bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
+
+        # Data augmentation
+        image = augmentation.random_adjust_brightness(image)
+        image = augmentation.random_adjust_contrast(image)
+        # crop the region contain at least 1 bounding box
+        if tf.random.uniform(()) > 0.2:
+            image, bbox = self.random_crop(image, bbox)
+
+        bbox = normalize_bbox(bbox)
+        # image, bbox = augmentation.random_flip_horizontal(image, bbox)
+
+        image, image_shape, _ = resize_and_pad_image(image, jitter=None)
+        w, h = image_shape[0], image_shape[1]
+
+        bbox = tf.stack([
+            bbox[:, 0] * h,
+            bbox[:, 1] * w,
+            bbox[:, 2] * h,
+            bbox[:, 3] * w,
+        ], axis=-1)
+
+        if self.convert_xywh:
+            bbox = convert_to_xywh(bbox)
+
+        label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
+
+        return image, bbox, label
