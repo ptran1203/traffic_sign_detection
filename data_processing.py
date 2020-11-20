@@ -115,7 +115,21 @@ class DataProcessing:
             (box[:, 3] - y1) * self.scale_y,
         ], axis=1)
 
-    def random_crop(self, image, bbox):
+    def get_slice_indices(self):
+        num_paths = math.ceil(self.origin_width / self.width)
+        slices = []
+        for i in range(num_paths):
+            start = max(self.width * i - self.overlap_x, 0)
+            end = start + self.width
+            if end > self.origin_width:
+                start = end - self.origin_width
+                end = self.origin_width
+
+            slices.append([start, end])
+
+        return slices
+
+    def random_crop(self, image, bbox, labels):
         width = self.width
         height = self.height
         idx = tf.random.uniform((), 0, tf.shape(bbox)[0], tf.int32)
@@ -125,7 +139,11 @@ class DataProcessing:
         x2 = tf.cast(x2, tf.int32)
         y1 = tf.cast(y1, tf.int32)
         y2 = tf.cast(y2, tf.int32)
-        # w, h = x2 - x1, y2 - y1
+
+        # 60% part of object lie inside the frame is considered valid
+        accept_ratio = 0.6
+        mean_x1, mean_x2 = tf.reduce_mean(bbox[:, 0]), tf.reduce_mean(bbox[:, 2])
+        pad_size = accept_ratio * (mean_x2 - mean_x1)
 
         x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
         y1 = tf.random.uniform((), y1 - height, y1, dtype=tf.int32)
@@ -158,33 +176,27 @@ class DataProcessing:
 
         # filter out boxes that not lie inside the cropped image
         x1_b, y1_b, x2_b, y2_b = tf.unstack(bbox, axis=1)
+
         # 1. x1 of box > cropped width
         # 2. x2 of box < cropped width
-        case1 = tf.logical_and(tf.greater(x1_b, x1), tf.less(x2_b, x1 + width + 10))
+        x_condition = tf.logical_and(
+            tf.greater(x1_b, x1 - pad_size),
+            tf.less(x2_b, x1 + width + pad_size)
+        )
         # 3. y1 of box> cropped height
         # 4. y2 of box> cropped height
-        case2 = tf.logical_and(tf.greater(y1_b, y1), tf.less(y2_b, y1 + height + 10))
-        cond = tf.logical_and(case1, case2)
+        y_condition = tf.logical_and(
+            tf.greater(y1_b, y1 - pad_size),
+            tf.less(y2_b, y1 + height + pad_size)
+        )
+
+        cond = tf.logical_and(x_condition, y_condition)
         positive_mask = tf.where(cond)
 
         bbox = self.moved_box(bbox, x1, x2, y1, y2)
         bbox = tf.gather_nd(bbox, positive_mask)
-
-        return cropped, bbox
-
-    def get_slice_indices(self):
-        num_paths = math.ceil(self.origin_width / self.width)
-        slices = []
-        for i in range(num_paths):
-            start = max(self.width * i - self.overlap_x, 0)
-            end = start + self.width
-            if end > self.origin_width:
-                start = end - self.origin_width
-                end = self.origin_width
-
-            slices.append([start, end])
-
-        return slices
+        labels = tf.gather_nd(labels, positive_mask)
+        return cropped, bbox, labels
 
     def preprocess_data(self, example):
         """
@@ -192,6 +204,7 @@ class DataProcessing:
         """
         sample = tf.io.parse_single_example(example, image_feature_description)
         image = tf.image.decode_png(sample["image"])
+        label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         bbox = tf.cast(
             tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
         )
@@ -202,7 +215,7 @@ class DataProcessing:
         image = augmentation.random_adjust_contrast(image)
         # crop the region contain at least 1 bounding box
         if tf.random.uniform(()) > 0.2:
-            image, bbox = self.random_crop(image, bbox)
+            image, bbox, label = self.random_crop(image, bbox, label)
 
         bbox = normalize_bbox(bbox)
         # image, bbox = augmentation.random_flip_horizontal(image, bbox)
@@ -219,7 +232,5 @@ class DataProcessing:
 
         if self.convert_xywh:
             bbox = convert_to_xywh(bbox)
-
-        label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
 
         return image, bbox, label
