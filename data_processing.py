@@ -90,14 +90,14 @@ def write_tfrecords(data, file_path, train_dir):
                 print(count, "/", len(data))
 
 class DataProcessing:
-    def __init__(self, width=400, height=154, augment=True, mix_iterator=None):
+    def __init__(self, width=400, height=154, augment=True, mix_iterator=None,convert_xywh=True):
         self.origin_width = 1622
         self.origin_height = 626
         self.width = width
         self.height = height
         self.scale_x = self.origin_width / self.width
         self.scale_y = self.origin_height / self.height
-        self.convert_xywh = True
+        self.convert_xywh = convert_xywh
         self.augment = augment
         self.mix_iterator = mix_iterator
 
@@ -213,6 +213,7 @@ class DataProcessing:
         bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
 
         if not self.augment:
+            image, bbox, label = self.random_crop(image, bbox, label)
             if self.convert_xywh:
                 bbox = convert_to_xywh(bbox)
             return image, bbox, label
