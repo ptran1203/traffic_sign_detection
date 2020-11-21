@@ -214,6 +214,10 @@ class DataProcessing:
 
         if not self.augment:
             image, bbox, label = self.random_crop(image, bbox, label)
+            image = tf.image.resize(image, (self.origin_height, self.origin_width))
+            bbox = normalize_bbox(bbox,
+                w=self.width/self.origin_width,
+                h=self.height/self.origin_height)
             if self.convert_xywh:
                 bbox = convert_to_xywh(bbox)
             return image, bbox, label

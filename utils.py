@@ -110,11 +110,13 @@ def to_xyxy(bbox):
     )
 
 
-def normalize_bbox(bbox):
-    h, w = 1622, 626
-    return tf.stack(
-        [bbox[:, 0] / h, bbox[:, 1] / w, bbox[:, 2] / h, bbox[:, 3] / w,], axis=-1,
-    )
+def normalize_bbox(bbox, h=1622, w=626):
+    return tf.stack([
+        bbox[:, 0] / h,
+        bbox[:, 1] / w,
+        bbox[:, 2] / h,
+        bbox[:, 3] / w,
+    ], axis=-1)
 
 
 def convert_to_xywh(boxes):
