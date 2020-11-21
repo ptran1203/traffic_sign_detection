@@ -90,7 +90,7 @@ def write_tfrecords(data, file_path, train_dir):
                 print(count, "/", len(data))
 
 class DataProcessing:
-    def __init__(self, width=400, height=154):
+    def __init__(self, width=400, height=154, augment=True):
         self.origin_width = 1622
         self.origin_height = 626
         self.width = width
@@ -98,6 +98,7 @@ class DataProcessing:
         self.scale_x = self.origin_width / self.width
         self.scale_y = self.origin_height / self.height
         self.convert_xywh = True
+        self.augment = augment
 
     def set_width(self, width):
         self.width = width
@@ -209,6 +210,11 @@ class DataProcessing:
             tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
         )
         bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
+
+        if not self.augment:
+            if self.convert_xywh:
+                bbox = convert_to_xywh(bbox)
+            return image, bbox, label
 
         # Data augmentation
         image = augmentation.random_adjust_brightness(image)
