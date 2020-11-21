@@ -45,7 +45,7 @@ def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
     return tf.expand_dims(tf.tile(g_kernel, (1, 1, n_channels)), axis=-1)
 
 
-def random_gaussian_blur(img, prob=0.3):
+def random_gaussian_blur(img, prob=0.7):
     if tf.random.uniform(()) > prob:
         img = tf.cast(img, dtype=tf.float32)
         if tf.random.uniform(()) > 0.5:
