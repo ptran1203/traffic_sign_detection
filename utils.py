@@ -110,12 +110,12 @@ def to_xyxy(bbox):
     )
 
 
-def normalize_bbox(bbox, h=1622, w=626):
+def normalize_bbox(bbox, w=1622, h=626):
     return tf.stack([
-        bbox[:, 0] / h,
-        bbox[:, 1] / w,
-        bbox[:, 2] / h,
-        bbox[:, 3] / w,
+        bbox[:, 0] / w,
+        bbox[:, 1] / h,
+        bbox[:, 2] / w,
+        bbox[:, 3] / h,
     ], axis=-1)
 
 
