@@ -397,22 +397,3 @@ class LabelEncoder:
             labels = labels.write(i, label)
         batch_images = tf.keras.applications.resnet.preprocess_input(batch_images)
         return batch_images, labels.stack()
-
-
-# def fit(model, data_gen, epochs=100):
-#     import datetime
-#     for e in range(epochs):
-#         start = datetime.datetime.now()
-#         loss_list = []
-#         print("Epochs {} - ".format(e + 1), end="")
-
-#         for x, y in data_gen:
-#             loss = model.train_on_batch(x, y)
-#             loss_list.append(loss)
-#             utils._print_progress("Epochs {} - {}/{}".format(e + 1, len(loss_list), 2))
-
-#         avg_loss = np.mean(np.array(loss_list))
-#         print(" - loss: {} - {}".format(
-#             avg_loss,
-#             datetime.datetime.now() - start
-#         ))

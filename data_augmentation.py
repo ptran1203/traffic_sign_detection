@@ -36,6 +36,7 @@ def random_adjust_brightness(image):
     return image
 
 
+
 def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
     x = tf.range(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=dtype)
     g = tf.math.exp(-(tf.pow(x, 2) / (2 * tf.pow(tf.cast(sigma, dtype), 2))))
