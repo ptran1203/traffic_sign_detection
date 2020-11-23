@@ -305,12 +305,11 @@ class LabelEncoder:
       box_variance: The scaling factors used to scale the bounding box targets.
     """
 
-    def __init__(self, label_smoothing=False):
+    def __init__(self):
         self._anchor_box = AnchorBox()
         self._box_variance = tf.convert_to_tensor(
             [0.1, 0.1, 0.2, 0.2], dtype=tf.float32
         )
-        self.label_smoothing = label_smoothing
 
     def _match_anchor_boxes(
         self, anchor_boxes, gt_boxes, match_iou=0.5, ignore_iou=0.4
@@ -369,14 +368,6 @@ class LabelEncoder:
         box_target = box_target / self._box_variance
         return box_target
 
-    @staticmethod
-    def _smooth_labels(labels, factor=0.1):
-        """Apply label smoothing"""
-        labels = labels * (1 - factor)
-        labels = labels + (factor / tf.shape(labels)[1])
-
-        return labels
-
     def _encode_sample(self, image_shape, gt_boxes, cls_ids):
         """Creates box and classification targets for a single sample"""
         anchor_boxes = self._anchor_box.get_anchors(image_shape[1], image_shape[2])
@@ -392,9 +383,6 @@ class LabelEncoder:
         )
         cls_target = tf.where(tf.equal(ignore_mask, 1.0), -2.0, cls_target)
         cls_target = tf.expand_dims(cls_target, axis=-1)
-
-        if self.label_smoothing:
-            cls_target = self._smooth_labels(cls_target)
 
         label = tf.concat([box_target, cls_target], axis=-1)
         return label

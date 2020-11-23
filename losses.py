@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 class RetinaNetBoxLoss(tf.losses.Loss):
     """Implements Smooth L1 loss"""
 
@@ -42,7 +41,6 @@ class RetinaNetClassificationLoss(tf.losses.Loss):
         loss = alpha * tf.pow(1.0 - pt, self._gamma) * cross_entropy
         return tf.reduce_sum(loss, axis=-1)
 
-
 class RetinaNetLoss(tf.losses.Loss):
     """Wrapper to combine both the losses"""
 
@@ -61,6 +59,7 @@ class RetinaNetLoss(tf.losses.Loss):
             depth=self._num_classes,
             dtype=tf.float32,
         )
+        cls_labels = _smooth_labels(cls_labels)
         cls_predictions = y_pred[:, :, 4:]
         positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
         ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
@@ -73,3 +72,11 @@ class RetinaNetLoss(tf.losses.Loss):
         box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
         loss = clf_loss + box_loss
         return loss
+
+
+def _smooth_labels(labels, factor=0.1):
+    """Apply label smoothing"""
+    labels = labels * (1 - factor)
+    labels = labels + (factor / tf.cast(tf.shape(labels)[1], tf.float32))
+
+    return labels
