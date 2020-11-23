@@ -76,8 +76,9 @@ def image_example(image_string, label, bbox):
 
 def write_tfrecords(data, file_path, train_dir):
     count = 0
-    if file_path.endswith("images"):
-        file_path = file_path.replace("images", "")
+    if train_dir.endswith("images"):
+        train_dir = train_dir.replace("images", "")
+
     with tf.io.TFRecordWriter(file_path) as writer:
         for img_info in data:
             ipath = "{}images/{}.png".format(train_dir, img_info["id"])

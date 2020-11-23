@@ -212,7 +212,7 @@ if __name__ == "__main__":
     output_path = args.output_path
 
     if output_path.split(".")[-1] != "json":
-        raise("Output file should be .json format")
+        raise("Output file should be json format")
 
     TFRECORDS_FILE_PRIVATE_TEST = args.test_file
 
