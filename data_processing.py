@@ -226,12 +226,15 @@ class DataProcessing:
         image = augmentation.random_adjust_brightness(image)
         image = augmentation.random_adjust_contrast(image)
         # crop the region contain at least 1 bounding box
-        if tf.random.uniform(()) > 0.2:
+        has_smallb = has_small_bbox(bbox)
+        if tf.logical_or(has_smallb, tf.random.uniform(()) > 0.5):
             image, bbox, label = self.random_crop(image, bbox, label)
 
         bbox = normalize_bbox(bbox)
         image, bbox = augmentation.random_flip_horizontal(image, bbox)
-        # image = augmentation.random_gaussian_blur(image)
+
+        if not has_smallb:
+            image = augmentation.random_gaussian_blur(image, 0.5)
 
         image, image_shape, _ = resize_and_pad_image(image, jitter=None)
         w, h = image_shape[0], image_shape[1]

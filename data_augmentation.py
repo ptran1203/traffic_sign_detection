@@ -31,7 +31,7 @@ def random_adjust_contrast(image):
 
 def random_adjust_brightness(image):
     if tf.random.uniform(()) > 0.8:
-        return tf.image.random_brightness(image, 0.1)
+        return tf.image.random_brightness(image, 0.05)
 
     return image
 
