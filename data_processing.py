@@ -111,14 +111,14 @@ class DataProcessing:
     def set_height(self, height):
         self.height = height
 
-    def moved_box(self, box, x1, x2, y1, y2):
-        x1, x2 = tf.cast(x1, tf.float32), tf.cast(x2, tf.float32)
-        y1, y2 = tf.cast(y1, tf.float32), tf.cast(y2, tf.float32)
+    def moved_box(self, box, x1, y1, width, height):
+        x1, y1 = tf.cast(x1, tf.float32), tf.cast(y1, tf.float32)
+
         return tf.stack([
-            (box[:, 0] - x1) * self.scale_x,
-            (box[:, 1] - y1) * self.scale_y,
-            (box[:, 2] - x1) * self.scale_x,
-            (box[:, 3] - y1) * self.scale_y,
+            tf.maximum((box[:, 0] - x1), 0) * self.scale_x,
+            tf.maximum((box[:, 1] - y1), 0) * self.scale_y,
+            tf.minimum((box[:, 2] - x1), width) * self.scale_x,
+            tf.minimum((box[:, 3] - y1), height) * self.scale_y,
         ], axis=1)
 
     def get_slice_indices(self):
@@ -147,9 +147,7 @@ class DataProcessing:
         y2 = tf.cast(y2, tf.int32)
 
         # 60% part of object lie inside the frame is considered valid
-        accept_ratio = 0.6
-        mean_x1, mean_x2 = tf.reduce_mean(bbox[:, 0]), tf.reduce_mean(bbox[:, 2])
-        pad_size = accept_ratio * (mean_x2 - mean_x1)
+        pad_size = 20
 
         x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
         y1 = tf.random.uniform((), y1 - height, y1, dtype=tf.int32)
@@ -199,9 +197,10 @@ class DataProcessing:
         cond = tf.logical_and(x_condition, y_condition)
         positive_mask = tf.where(cond)
 
-        bbox = self.moved_box(bbox, x1, x2, y1, y2)
+        bbox = self.moved_box(bbox, x1, y1, width, height)
         bbox = tf.gather_nd(bbox, positive_mask)
         labels = tf.gather_nd(labels, positive_mask)
+
         return cropped, bbox, labels
 
     def preprocess_data(self, example):
@@ -232,7 +231,7 @@ class DataProcessing:
 
         bbox = normalize_bbox(bbox)
         image, bbox = augmentation.random_flip_horizontal(image, bbox)
-        image = augmentation.random_gaussian_blur(image)
+        # image = augmentation.random_gaussian_blur(image)
 
         image, image_shape, _ = resize_and_pad_image(image, jitter=None)
         w, h = image_shape[0], image_shape[1]
