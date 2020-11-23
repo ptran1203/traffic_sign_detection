@@ -7,6 +7,8 @@ import model as m
 import losses
 import numpy as np
 import json
+import argparse
+
 try:
     from google.colab.patches import cv2_imshow
 except ImportError:
@@ -163,7 +165,7 @@ def get_inference_model():
     model.compile(optimizer="adam", loss=losses.RetinaNetLoss(num_of_classes))
 
     # Trick: fit model first so the model can load the weight
-    model.fit(np.random.rand(1, 896, 2304,3), np.random.rand(1, 386694, 5))
+    model.fit(np.random.rand(1, 896, 2304, 3), np.random.rand(1, 386694, 5))
     image = tf.keras.Input(shape=[None, None, 3], name="image")
     model.load_weights("./weight_dense.h5")
     predictions = model(image, training=False)
@@ -194,9 +196,14 @@ def get_test_data_info(input_path):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Traffic sign detection')
+    parser.add_argument("--input_path", dest="input_path",
+                        metavar="I", type=str, default="/data/images",
+                        help="Path to input images")
+    args = parser.parse_args()
+
     # Make prediction
-    input_path = "/data/images"
-    input_path = "/home/ubuntu/Documents/za_traffic_2020/traffic_public_test/images"
+    input_path = args.input_path
 
     TFRECORDS_FILE_PRIVATE_TEST = "./images_private_test.tfrecords"
 
