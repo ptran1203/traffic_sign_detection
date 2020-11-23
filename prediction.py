@@ -8,6 +8,7 @@ import losses
 import numpy as np
 import json
 import argparse
+import datetime
 
 try:
     from google.colab.patches import cv2_imshow
@@ -197,25 +198,34 @@ def get_test_data_info(input_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Traffic sign detection')
-    parser.add_argument("--input_path", dest="input_path",
+    parser.add_argument("--input", dest="input_path",
                         metavar="I", type=str, default="/data/images",
                         help="Path to input images")
     parser.add_argument("--test_file", dest="test_file", default="./images_private_test.tfrecords",
                         metavar="F", type=str, help="Tfrecords test file",)
+    parser.add_argument("--output", dest="output_path", metavar="O", type=str,
+                        default="/data/result/submission.json", help="Output file path")
     args = parser.parse_args()
 
     # Make prediction
     input_path = args.input_path
+    output_path = args.output_path
+
+    if output_path.split(".")[-1] != "json":
+        raise("Output file should be .json format")
 
     TFRECORDS_FILE_PRIVATE_TEST = args.test_file
 
     # Get list of test images
     data_info = get_test_data_info(input_path)
 
+    print("Test on {} images".format(len(data_info)))
+
     if not os.path.isfile(TFRECORDS_FILE_PRIVATE_TEST):
         print("- tfrecords file not found, create new one")
         data_processing.write_tfrecords(data_info, TFRECORDS_FILE_PRIVATE_TEST, input_path)
 
+    print("Create tfrecords dataset")
     test_dataset = tf.data.TFRecordDataset(TFRECORDS_FILE_PRIVATE_TEST)
 
     # Create submission.json
@@ -223,6 +233,8 @@ if __name__ == "__main__":
     idx = 0
     predictor = Prediction(get_inference_model())
 
+    print("Start predict...")
+    start = datetime.datetime.now()
     for sample in test_dataset:
         image, boxes, scores, classes = predictor.detect_single_image(sample)
         if not isinstance(boxes, list):
@@ -246,5 +258,9 @@ if __name__ == "__main__":
         utils._print_progress("{}/{}".format(idx, 585))
         idx += 1
 
-    with open("submission.json", "w") as f:
+    print("Predict in {}".format(datetime.datetime.now() - start))
+
+    with open(output_path, "w") as f:
         json.dump(submission, f, indent=2)
+
+    print("Submission saved at {}".format(output_path))
