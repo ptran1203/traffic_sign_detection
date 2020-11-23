@@ -45,7 +45,7 @@ def has_small_bbox(bboxes):
     min_val = tf.constant(650, dtype=tf.float32)
     return tf.math.reduce_any(tf.math.less(areas, min_val))
 
-def image_bboxes(annotations):
+def create_dataset_list(annotations):
     image_bboxes = {}
     for item in annotations:
         img_id = item.get("image_id")

@@ -221,11 +221,9 @@ if __name__ == "__main__":
 
     print("Test on {} images".format(len(data_info)))
 
-    if not os.path.isfile(TFRECORDS_FILE_PRIVATE_TEST):
-        print("- tfrecords file not found, create new one")
-        data_processing.write_tfrecords(data_info, TFRECORDS_FILE_PRIVATE_TEST, input_path)
-
     print("Create tfrecords dataset")
+    data_processing.write_tfrecords(data_info, TFRECORDS_FILE_PRIVATE_TEST, input_path)
+
     test_dataset = tf.data.TFRecordDataset(TFRECORDS_FILE_PRIVATE_TEST)
 
     # Create submission.json
