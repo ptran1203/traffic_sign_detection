@@ -44,11 +44,12 @@ class RetinaNetClassificationLoss(tf.losses.Loss):
 class RetinaNetLoss(tf.losses.Loss):
     """Wrapper to combine both the losses"""
 
-    def __init__(self, num_classes=80, alpha=0.25, gamma=2.0, delta=1.0):
+    def __init__(self, num_classes=80, alpha=0.25, gamma=2.0, delta=1.0, label_smoothing=True):
         super(RetinaNetLoss, self).__init__(reduction="auto", name="RetinaNetLoss")
         self._clf_loss = RetinaNetClassificationLoss(alpha, gamma)
         self._box_loss = RetinaNetBoxLoss(delta)
         self._num_classes = num_classes
+        self._label_smoothing = label_smoothing
 
     def call(self, y_true, y_pred):
         y_pred = tf.cast(y_pred, dtype=tf.float32)
@@ -59,7 +60,10 @@ class RetinaNetLoss(tf.losses.Loss):
             depth=self._num_classes,
             dtype=tf.float32,
         )
-        cls_labels = _smooth_labels(cls_labels)
+
+        if self._label_smoothing:
+            cls_labels = _smooth_labels(cls_labels)
+
         cls_predictions = y_pred[:, :, 4:]
         positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
         ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
