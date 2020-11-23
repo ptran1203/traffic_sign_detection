@@ -147,7 +147,9 @@ class DataProcessing:
         y2 = tf.cast(y2, tf.int32)
 
         # 60% part of object lie inside the frame is considered valid
-        pad_size = 20
+        accept_ratio = 0.6
+        mean_x1, mean_x2 = tf.reduce_mean(bbox[:, 0]), tf.reduce_mean(bbox[:, 2])
+        pad_size = accept_ratio * (mean_x2 - mean_x1)
 
         x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
         y1 = tf.random.uniform((), y1 - height, y1, dtype=tf.int32)
