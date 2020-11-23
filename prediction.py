@@ -200,12 +200,14 @@ if __name__ == "__main__":
     parser.add_argument("--input_path", dest="input_path",
                         metavar="I", type=str, default="/data/images",
                         help="Path to input images")
+    parser.add_argument("--test_file", dest="test_file", default="./images_private_test.tfrecords",
+                        metavar="F", type=str, help="Tfrecords test file",)
     args = parser.parse_args()
 
     # Make prediction
     input_path = args.input_path
 
-    TFRECORDS_FILE_PRIVATE_TEST = "./images_private_test.tfrecords"
+    TFRECORDS_FILE_PRIVATE_TEST = args.test_file
 
     # Get list of test images
     data_info = get_test_data_info(input_path)
