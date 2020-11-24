@@ -115,6 +115,14 @@ class DataProcessing:
         x1, y1 = tf.cast(x1, tf.float32), tf.cast(y1, tf.float32)
 
         return tf.stack([
+            (box[:, 0] - x1) * self.scale_x,
+            (box[:, 1] - y1) * self.scale_y,
+            (box[:, 2] - x1) * self.scale_x,
+            (box[:, 3] - y1) * self.scale_y,
+        ], axis=1)
+
+        # Dont use this
+        return tf.stack([
             tf.maximum((box[:, 0] - x1), 0) * self.scale_x,
             tf.maximum((box[:, 1] - y1), 0) * self.scale_y,
             tf.minimum((box[:, 2] - x1), width) * self.scale_x,

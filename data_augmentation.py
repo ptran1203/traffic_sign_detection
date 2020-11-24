@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import math
 
-size = 5
+size = 3
 kernel_motion_blur = np.zeros((size, size))
 kernel_motion_blur[int((size - 1) / 2), :] = np.ones(size)
 kernel_motion_blur = kernel_motion_blur / size
@@ -30,11 +30,10 @@ def random_adjust_contrast(image):
 
 
 def random_adjust_brightness(image):
-    if tf.random.uniform(()) > 0.8:
-        return tf.image.random_brightness(image, 0.05)
+    if tf.random.uniform(()) > 0.5:
+        return tf.image.random_brightness(image, 0.06)
 
     return image
-
 
 
 def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
