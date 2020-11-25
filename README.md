@@ -1,5 +1,6 @@
 # traffic_sign_detection
-Zalo aI
+
+Solution for Zalo AI traffic signs detection
 
 
 ## Trainning
