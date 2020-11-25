@@ -14,6 +14,8 @@ parser = argparse.ArgumentParser(description='Traffic sign detection')
 parser.add_argument("--input", dest="input_path",
                     metavar="I", type=str, default="/data/images",
                     help="Path to training images")
+parser.add_argument("--batch", dest="batch_size",
+                    metavar="B", type=int, default=2)
 args = parser.parse_args()
 
 input_path = args.input_path
@@ -41,7 +43,7 @@ label_map = {
     7: "Mandatory",
 }
 num_classes = 7
-batch_size = 2
+batch_size = args.batch_size
 
 
 fdataset = tf.data.TFRecordDataset(TFRECORDS_FILE)
@@ -65,7 +67,7 @@ train_size = 4500 - val_size
 train_data = dataset.take(train_size)
 val_data = dataset.skip(train_size) 
 train_steps_per_epoch = train_size // batch_size
-train_steps = 4 * 10000 // 2
+train_steps = 6 * 10000
 epochs = train_steps // train_steps_per_epoch
 
 learning_rates = [1e-4, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
