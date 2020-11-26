@@ -15,3 +15,9 @@ python3 train.py --input [path to training images]
 or
 python3 prediction.py --input [path to test images] --output [path to submission file]
 ```
+
+## Inference result
+
+![./images/pred_1.png](./images/pred_1.png)
+![./images/pred_2.png](./images/pred_2.png)
+![./images/pred_3.png](./images/pred_3.png)
