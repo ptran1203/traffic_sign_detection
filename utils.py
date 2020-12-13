@@ -182,18 +182,26 @@ def compute_iou(boxes1, boxes2):
 
 
 def visualize_detections(
-    image, boxes, classes, scores, figsize=(7, 7), linewidth=1, color=[0, 0, 1]
+    image, boxes, scores=None, figsize=(15, 15), linewidth=1, color=[1, 1, 1],
+    box_format="xywh",
 ):
     """Visualize Detections"""
+    if scores is None:
+        scores = range(len(boxes))
+
     image = np.array(image, dtype=np.uint8)
     plt.figure(figsize=figsize)
     plt.axis("off")
     plt.imshow(image)
     ax = plt.gca()
-    for box, _cls, score in zip(boxes, classes, scores):
-        text = "{}: {:.2f}".format(_cls, score)
-        x1, y1, x2, y2 = box
-        w, h = x2 - x1, y2 - y1
+    for box, score in zip(boxes, scores):
+        text = "{}: {:.2f}".format("impact", score)
+        if box_format == "xywh":
+            x1, y1, w, h = box
+            x2 = y2 = 0
+        else:
+            x1, y1, x2, y2 = box
+            w, h = x2 - x1, y2 - y1
         patch = plt.Rectangle(
             [x1, y1], w, h, fill=False, edgecolor=color, linewidth=linewidth
         )
