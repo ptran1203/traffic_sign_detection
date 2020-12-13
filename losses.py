@@ -50,9 +50,14 @@ class RetinaNetClassificationLoss(tf.losses.Loss):
 class RetinaNetLoss(tf.losses.Loss):
     """Wrapper to combine both the losses"""
 
-    def __init__(self, num_classes=80, alpha=0.25, gamma=2.0, delta=1.0, label_smoothing=True):
+    def __init__(self, num_classes=80, alpha=0.25,
+                gamma=2.0, delta=1.0, label_smoothing=True,
+                has_labels=True):
         super(RetinaNetLoss, self).__init__(reduction="auto", name="RetinaNetLoss")
-        self._clf_loss = RetinaNetClassificationLoss(alpha, gamma, label_smoothing)
+        self._has_labels=has_labels
+        if self._has_labels:
+            self._clf_loss = RetinaNetClassificationLoss(alpha, gamma, label_smoothing)
+
         self._box_loss = RetinaNetBoxLoss(delta)
         self._num_classes = num_classes
         self._label_smoothing = label_smoothing
@@ -75,20 +80,25 @@ class RetinaNetLoss(tf.losses.Loss):
         cls_predictions = y_pred[:, :, 4:]
         positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
         ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
-        clf_loss = self._clf_loss(cls_labels, cls_predictions)
+        clf_loss = self._clf_loss(cls_labels, cls_predictions) if self._has_labels else 0
         box_loss = self._box_loss(box_labels, box_predictions)
 
         if self._label_smoothing:
-            clf_loss = tf.where(tf.greater(ignore_mask, 0.91), 0.0, clf_loss)
+            if self._has_labels:
+                clf_loss = tf.where(tf.greater(ignore_mask, 0.91), 0.0, clf_loss)
             box_loss = tf.where(tf.greater(positive_mask, 0.91), box_loss, 0.0)
         else:
-            clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
+            if self._has_labels:
+                clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
             box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
         normalizer = tf.reduce_sum(positive_mask, axis=-1)
-        clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
+        if self._has_labels:
+            clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
         box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
+
         loss = clf_loss + box_loss
-        return loss
+
+        return loss if self._has_labels else box_loss
 
 
 def _smooth_labels(labels):

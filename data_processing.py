@@ -63,8 +63,6 @@ def create_dataset_list(annotations):
 
 
 def image_example(image_string, label, bbox):
-    image_shape = tf.image.decode_jpeg(image_string).shape
-
     feature = {
         "bbox": bytes_feature(bbox),
         "label": bytes_feature(label),
@@ -94,9 +92,11 @@ def write_tfrecords(data, file_path, train_dir):
                 print(count, "/", len(data))
 
 class DataProcessing:
-    def __init__(self, width=400, height=154, augment=True, mix_iterator=None,convert_xywh=True):
-        self.origin_width = 1622
-        self.origin_height = 626
+    def __init__(self, origin_width=1622, origin_height=626 , width=400,
+                height=154, augment=True, mix_iterator=None,convert_xywh=True,
+                has_labels=True):
+        self.origin_width = origin_width
+        self.origin_height = origin_height
         self.width = width
         self.height = height
         self.scale_x = self.origin_width / self.width
@@ -104,6 +104,7 @@ class DataProcessing:
         self.convert_xywh = convert_xywh
         self.augment = augment
         self.mix_iterator = mix_iterator
+        self.has_labels = has_labels
 
     def set_width(self, width):
         self.width = width
@@ -121,13 +122,6 @@ class DataProcessing:
             (box[:, 3] - y1) * self.scale_y,
         ], axis=1)
 
-        # Dont use this
-        return tf.stack([
-            tf.maximum((box[:, 0] - x1), 0) * self.scale_x,
-            tf.maximum((box[:, 1] - y1), 0) * self.scale_y,
-            tf.minimum((box[:, 2] - x1), width) * self.scale_x,
-            tf.minimum((box[:, 3] - y1), height) * self.scale_y,
-        ], axis=1)
 
     def get_slice_indices(self):
         num_paths = math.ceil(self.origin_width / self.width)
@@ -219,10 +213,15 @@ class DataProcessing:
         """
         sample = tf.io.parse_single_example(example, image_feature_description)
         image = tf.image.decode_png(sample["image"])
-        label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         bbox = tf.cast(
             tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
         )
+
+        if self.has_labels
+            label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
+        else:
+            label = np.arange(bbox)
+
         bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
 
         if not self.augment:
