@@ -217,7 +217,7 @@ class DataProcessing:
             tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
         )
 
-        if self.has_labels
+        if self.has_labels:
             label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         else:
             label = np.arange(bbox)
