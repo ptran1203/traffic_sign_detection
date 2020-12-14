@@ -5,7 +5,7 @@ from utils import convert_to_corners, compute_iou
 from data_processing import resize_and_pad_image
 from tensorflow import keras
 
-def get_backbone(name="resnet50"):
+def get_backbone(name="resnet50", weight):
     """Supported backbone: resnet50, resnet101, densenet121"""
     backbone = None
     if "resnet" in name:
@@ -21,7 +21,7 @@ def get_backbone(name="resnet50"):
             backbone = keras.applications.DenseNet121
             output_layers = ["pool3_conv", "pool4_conv", "relu"]
 
-    backbone_model = backbone(include_top=False, input_shape=[None, None, 3], weights=None)
+    backbone_model = backbone(include_top=False, input_shape=[None, None, 3], weights=weight)
     c3_output, c4_output, c5_output = [
         backbone_model.get_layer(layer_name).output
         for layer_name in output_layers
@@ -40,9 +40,9 @@ class FeaturePyramid(keras.layers.Layer):
         Currently supports ResNet50 only.
     """
 
-    def __init__(self, backbone="resnet50", **kwargs):
+    def __init__(self, backbone="resnet50", weight=None, **kwargs):
         super(FeaturePyramid, self).__init__(name="FeaturePyramid", **kwargs)
-        self.backbone = get_backbone(backbone)
+        self.backbone = get_backbone(backbone, weight)
         self.conv_c3_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
         self.conv_c4_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
         self.conv_c5_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
