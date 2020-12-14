@@ -20,14 +20,14 @@ except ImportError:
             return
 
 class Prediction:
-    def __init__(self, inference_model, crop_size=200,
+    def __init__(self, inference_model, crop_size=200, image_width=626,
                  crop_height=300, overlap=75, has_labels=True):
         self.crop_size = crop_size
         self.has_labels = has_labels
         self.crop_height = crop_height
         self.overlap = overlap
         self.g_slice_indices = self.get_slice_indices()
-        self.g_slice_indices_y = self.get_slice_indices(626)
+        self.g_slice_indices_y = self.get_slice_indices(image_width)
         self.seperate_y = len(self.g_slice_indices_y)
         self.inference_model = inference_model
 
@@ -44,9 +44,9 @@ class Prediction:
         over = self.overlap
         num_paths = math.ceil(full_size / crop_s)
 
-        if full_size == 626:
+        if full_size == image_width:
             if self.crop_height == 0:
-                return [[0, 626]]
+                return [[0, image_width]]
             crop_s = self.crop_height
             over = 30
         else:

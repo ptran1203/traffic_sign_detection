@@ -98,11 +98,12 @@ def write_tfrecords(data, file_path, train_dir):
 class DataProcessing:
     def __init__(self, origin_width=1622, origin_height=626 , width=400,
                 height=154, augment=True, mix_iterator=None,convert_xywh=True,
-                has_labels=True):
+                has_labels=True, random_cropping=True):
         self.origin_width = origin_width
         self.origin_height = origin_height
         self.width = width
         self.height = height
+        self.random_cropping = random_cropping
         self.scale_x = self.origin_width / self.width
         self.scale_y = self.origin_height / self.height
         self.convert_xywh = convert_xywh
@@ -242,10 +243,10 @@ class DataProcessing:
         image = augmentation.random_adjust_contrast(image)
         # crop the region contain at least 1 bounding box
         has_smallb = has_small_bbox(bbox)
-        if tf.logical_or(has_smallb, tf.random.uniform(()) > 0.5):
+        if self.random_cropping and tf.logical_or(has_smallb, tf.random.uniform(()) > 0.5):
             image, bbox, label = self.random_crop(image, bbox, label)
 
-        bbox = normalize_bbox(bbox)
+        bbox = normalize_bbox(bbox, self.origin_width, self.origin_height)
         image, bbox = augmentation.random_flip_horizontal(image, bbox)
 
         if not has_smallb:
