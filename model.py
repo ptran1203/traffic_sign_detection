@@ -5,7 +5,7 @@ from utils import convert_to_corners, compute_iou
 from data_processing import resize_and_pad_image
 from tensorflow import keras
 
-def get_backbone(name="resnet50", weight):
+def get_backbone(name="resnet50", weight=None):
     """Supported backbone: resnet50, resnet101, densenet121"""
     backbone = None
     if "resnet" in name:
