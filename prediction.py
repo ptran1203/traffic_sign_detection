@@ -25,6 +25,7 @@ class Prediction:
         self.crop_size = crop_size
         self.has_labels = has_labels
         self.crop_height = crop_height
+        self.image_width = image_width
         self.overlap = overlap
         self.g_slice_indices = self.get_slice_indices()
         self.g_slice_indices_y = self.get_slice_indices(image_width)
@@ -44,9 +45,9 @@ class Prediction:
         over = self.overlap
         num_paths = math.ceil(full_size / crop_s)
 
-        if full_size == image_width:
+        if full_size == self.image_width:
             if self.crop_height == 0:
-                return [[0, image_width]]
+                return [[0, self.image_width]]
             crop_s = self.crop_height
             over = 30
         else:
