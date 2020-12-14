@@ -220,7 +220,8 @@ class DataProcessing:
         if self.has_labels:
             label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         else:
-            label = np.arange(bbox)
+            shape = tf.shape(bbox)
+            label = tf.cast(tf.random.normal(shape=(shape[0],)), tf.int64)
 
         bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
 
