@@ -12,6 +12,16 @@ from utils import (
 import math
 import os
 
+image_feature_description = {
+    "bbox": tf.io.FixedLenFeature([], tf.string),
+    "label": tf.io.FixedLenFeature([], tf.string),
+    "image": tf.io.FixedLenFeature([], tf.string),
+}
+
+image_feature_description_no_labels = {
+    "bbox": tf.io.FixedLenFeature([], tf.string),
+    "image": tf.io.FixedLenFeature([], tf.string),
+}
 
 def bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -33,12 +43,6 @@ def int64_feature(value):
 def float_array_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
-
-image_feature_description = {
-    "bbox": tf.io.FixedLenFeature([], tf.string),
-    "label": tf.io.FixedLenFeature([], tf.string),
-    "image": tf.io.FixedLenFeature([], tf.string),
-}
 
 def has_small_bbox(bboxes):
     areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
@@ -211,7 +215,8 @@ class DataProcessing:
         """
         Applies preprocessing step to a single example
         """
-        sample = tf.io.parse_single_example(example, image_feature_description)
+        feat_description = image_feature_description if self.has_labels else image_feature_description_no_labels
+        sample = tf.io.parse_single_example(example, feat_description)
         image = tf.image.decode_png(sample["image"])
         bbox = tf.cast(
             tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
