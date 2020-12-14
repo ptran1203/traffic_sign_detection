@@ -21,9 +21,8 @@ except ImportError:
 
 class Prediction:
     def __init__(self, inference_model, crop_size=200, image_width=626,
-                 crop_height=300, overlap=75, has_labels=True):
+                 crop_height=300, overlap=75):
         self.crop_size = crop_size
-        self.has_labels = has_labels
         self.crop_height = crop_height
         self.image_width = image_width
         self.overlap = overlap
@@ -66,8 +65,7 @@ class Prediction:
         return slices
 
     def get_input_img(self, sample, crop=False):
-        feat_description = data_processing.image_feature_description if self.has_labels else data_processing.image_feature_description_no_labels
-        sample = tf.io.parse_single_example(sample, feat_description)
+        sample = tf.io.parse_single_example(sample, data_processing.image_feature_description)
 
         image = tf.image.decode_png(sample["image"])
 

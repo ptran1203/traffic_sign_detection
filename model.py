@@ -305,8 +305,7 @@ class LabelEncoder:
       box_variance: The scaling factors used to scale the bounding box targets.
     """
 
-    def __init__(self, has_labels=True):
-        self._has_labels = has_labels
+    def __init__(self):
         self._anchor_box = AnchorBox()
         self._box_variance = tf.convert_to_tensor(
             [0.1, 0.1, 0.2, 0.2], dtype=tf.float32
@@ -379,16 +378,14 @@ class LabelEncoder:
         matched_gt_boxes = tf.gather(gt_boxes, matched_gt_idx)
         box_target = self._compute_box_target(anchor_boxes, matched_gt_boxes)
         matched_gt_cls_ids = tf.gather(cls_ids, matched_gt_idx)
-        if self._has_labels:
-            cls_target = tf.where(
-                tf.not_equal(positive_mask, 1.0), -1.0, matched_gt_cls_ids
-            )
-            cls_target = tf.where(tf.equal(ignore_mask, 1.0), -2.0, cls_target)
-            cls_target = tf.expand_dims(cls_target, axis=-1)
+        cls_target = tf.where(
+            tf.not_equal(positive_mask, 1.0), -1.0, matched_gt_cls_ids
+        )
+        cls_target = tf.where(tf.equal(ignore_mask, 1.0), -2.0, cls_target)
+        cls_target = tf.expand_dims(cls_target, axis=-1)
 
-            label = tf.concat([box_target, cls_target], axis=-1)
-        else:
-            label = box_target
+        label = tf.concat([box_target, cls_target], axis=-1)
+
         return label
 
     def encode_batch(self, batch_images, gt_boxes, cls_ids):

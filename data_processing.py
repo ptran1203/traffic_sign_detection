@@ -18,11 +18,6 @@ image_feature_description = {
     "image": tf.io.FixedLenFeature([], tf.string),
 }
 
-image_feature_description_no_labels = {
-    "bbox": tf.io.FixedLenFeature([], tf.string),
-    "image": tf.io.FixedLenFeature([], tf.string),
-}
-
 def bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
     if isinstance(value, type(tf.constant(0))):
@@ -216,19 +211,13 @@ class DataProcessing:
         """
         Applies preprocessing step to a single example
         """
-        feat_description = image_feature_description if self.has_labels else image_feature_description_no_labels
-        sample = tf.io.parse_single_example(example, feat_description)
+        sample = tf.io.parse_single_example(example, image_feature_description)
         image = tf.image.decode_png(sample["image"])
         bbox = tf.cast(
             tf.io.decode_raw(sample["bbox"], out_type=tf.int64), dtype=tf.float32
         )
 
-        if self.has_labels:
-            label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
-        else:
-            shape = tf.shape(bbox)
-            label = tf.cast(tf.random.normal(shape=(shape[0],)), tf.int64)
-
+        label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
 
         if not self.augment:
