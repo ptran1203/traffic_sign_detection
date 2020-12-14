@@ -6,9 +6,9 @@ Start with [Colab](https://github.com/ptran1203/traffic_sign_detection/blob/main
 
 
 ## Method
-After taking a quick look at the dataset, we can see that there are many small signs. Which makes the model hard to detect them. One of the possible method in this scenario is Image Tiling [paper](https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Unel_The_Power_of_Tiling_for_Small_Object_Detection_CVPRW_2019_paper.pdf)
+After taking a quick look at the dataset, we can see that there are many small signs. Which makes the model hard to detect them. One of the possible methods in this scenario is [Image Tiling](https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Unel_The_Power_of_Tiling_for_Small_Object_Detection_CVPRW_2019_paper.pdf)
 
-In detail, I will crop the image into few parts with some overlaps and predict on each part and the original image. Then combine the result using non-max suppression.
+In detail, I will crop the image into a few parts with some overlaps, predict each part and the original image. Then combine the result using non-max suppression.
 
 ### 1. Image cropping
 ![tiling](./images/tiling.png)
@@ -46,6 +46,6 @@ python3 prediction.py --input [path to test images] --output [path to submission
 ---
 **NOTE**
 
-This project is ran on Google Colaboratory environment, so it may contain some issues when running on local machine, please don't hestitate to create new issue
+This project is running on Google Colaboratory environment, so it may contain some issues when running on local machine, please don't hesitate to create a new issue
 
 ---
