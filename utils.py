@@ -182,7 +182,8 @@ def compute_iou(boxes1, boxes2):
 
 
 def visualize_detections(
-    image, boxes, classes, scores, figsize=(15, 15), linewidth=1, color=[1, 1, 1]
+    image, boxes, classes, scores, figsize=(15, 15), linewidth=2, color=[1, 0, 0],
+    box_true=None, label_true=None
 ):
     """Visualize Detections"""
     image = np.array(image, dtype=np.uint8)
@@ -190,7 +191,9 @@ def visualize_detections(
     plt.axis("off")
     plt.imshow(image)
     ax = plt.gca()
-    for box, _cls, score in zip(boxes, classes, scores):
+    for i in range(len(boxes)):
+        box, _cls, score = boxes[i], classes[i], scores[i]
+
         text = "{}: {:.2f}".format(_cls, score)
         x1, y1, x2, y2 = box
         w, h = x2 - x1, y2 - y1
@@ -206,6 +209,17 @@ def visualize_detections(
             clip_box=ax.clipbox,
             clip_on=True,
         )
+
+    if box_true is not None and label_true is not None:
+        for i in range(len(box_true)):
+            box_t, cls_t = box_true[i], label_true[i]
+            text = "{}: {:.2f}".format(cls_t, 1.0)
+            x1, y1, w, h = box_t
+            patch = plt.Rectangle(
+                [x1, y1], w, h, fill=False,
+                edgecolor=[1,1,1], linewidth=3
+            )
+            ax.add_patch(patch)
     plt.show()
     return ax
 

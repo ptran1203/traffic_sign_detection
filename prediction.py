@@ -20,14 +20,20 @@ except ImportError:
             return
 
 class Prediction:
-    def __init__(self, inference_model, crop_size=200, image_width=626,
-                 crop_height=300, overlap=75):
+    def __init__(self,
+    inference_model,
+    crop_size=200,
+    image_height=626,
+    image_width=1622,
+    crop_height=300,
+    overlap=75):
         self.crop_size = crop_size
         self.crop_height = crop_height
         self.image_width = image_width
+        self.image_height = image_height
         self.overlap = overlap
-        self.g_slice_indices = self.get_slice_indices()
-        self.g_slice_indices_y = self.get_slice_indices(image_width)
+        self.g_slice_indices = self.get_slice_indices(image_width)
+        self.g_slice_indices_y = self.get_slice_indices(image_height)
         self.seperate_y = len(self.g_slice_indices_y)
         self.inference_model = inference_model
 
@@ -39,14 +45,14 @@ class Prediction:
 
         return self.g_slice_indices[idx][0], self.g_slice_indices_y[idx_y][0]
 
-    def get_slice_indices(self, full_size=1622):
+    def get_slice_indices(self, full_size):
         crop_s = self.crop_size
         over = self.overlap
         num_paths = math.ceil(full_size / crop_s)
 
-        if full_size == self.image_width:
+        if full_size == self.image_height:
             if self.crop_height == 0:
-                return [[0, self.image_width]]
+                return [[0, self.image_height]]
             crop_s = self.crop_height
             over = 30
         else:
@@ -72,6 +78,7 @@ class Prediction:
         train_imgs = []
         small_imgs = []
         if crop:
+            ratio = 0
             for start_y, end_y in self.g_slice_indices_y:
                 for start_x, end_x in self.g_slice_indices:
                     small_img = image[start_y:end_y, start_x: end_x, :]

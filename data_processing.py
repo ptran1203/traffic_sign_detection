@@ -93,7 +93,7 @@ def write_tfrecords(data, file_path, train_dir):
 class DataProcessing:
     def __init__(self, origin_width=1622, origin_height=626 , width=400,
                 height=154, augment=True, mix_iterator=None,convert_xywh=True,
-                has_labels=True, random_cropping=True):
+                random_cropping=True):
         self.origin_width = origin_width
         self.origin_height = origin_height
         self.width = width
@@ -104,7 +104,6 @@ class DataProcessing:
         self.convert_xywh = convert_xywh
         self.augment = augment
         self.mix_iterator = mix_iterator
-        self.has_labels = has_labels
 
     def set_width(self, width):
         self.width = width
