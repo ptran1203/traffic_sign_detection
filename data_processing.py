@@ -93,9 +93,10 @@ def write_tfrecords(data, file_path, train_dir):
 class DataProcessing:
     def __init__(self, origin_width=1622, origin_height=626 , width=400,
                 height=154, augment=True, mix_iterator=None,convert_xywh=True,
-                random_cropping=True):
+                random_cropping=True, dynamic_size=False):
         self.origin_width = origin_width
         self.origin_height = origin_height
+        self.dynamic_size = dynamic_size
         self.width = width
         self.height = height
         self.random_cropping = random_cropping
@@ -218,6 +219,11 @@ class DataProcessing:
 
         label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         bbox = to_xyxy(tf.reshape(bbox, (-1, 4)))
+
+        if self.dynamic_size:
+            shape = tf.shape(image)
+            self.origin_width = shape[1]
+            self.origin_height = shape[0]
 
         if not self.augment:
             image, bbox, label = self.random_crop(image, bbox, label)
