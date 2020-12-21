@@ -26,12 +26,14 @@ class Prediction:
     image_height=626,
     image_width=1622,
     crop_height=300,
-    overlap=75):
+    overlap=75,
+    dynamic_size=False):
         self.crop_size = crop_size
         self.crop_height = crop_height
         self.image_width = image_width
         self.image_height = image_height
         self.overlap = overlap
+        self.dynamic_size = dynamic_size
         self.g_slice_indices = self.get_slice_indices(image_width)
         self.g_slice_indices_y = self.get_slice_indices(image_height)
         self.seperate_y = len(self.g_slice_indices_y)
@@ -82,6 +84,11 @@ class Prediction:
         sample = tf.io.parse_single_example(sample, data_processing.image_feature_description)
 
         image = tf.image.decode_png(sample["image"])
+
+        if self.dynamic_size:
+            shape = image.get_shape().value
+            self.set_height(shape[1])
+            self.set_width(shape[0])
 
         train_imgs = []
         small_imgs = []
