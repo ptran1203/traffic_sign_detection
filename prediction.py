@@ -37,6 +37,14 @@ class Prediction:
         self.seperate_y = len(self.g_slice_indices_y)
         self.inference_model = inference_model
 
+    def set_height(self, height):
+        self.image_height = height
+        self.g_slice_indices_y = self.get_slice_indices(height)
+
+    def set_width(self, width):
+        self.image_width = width
+        self.g_slice_indices = self.get_slice_indices(width)
+
     def get_offset(self, idx):
         cur_rank_y = idx // self.seperate
         if idx >= self.seperate * cur_rank_y:
