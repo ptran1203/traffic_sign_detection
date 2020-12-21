@@ -12,8 +12,8 @@ kernel_motion_blur = np.expand_dims(kernel_motion_blur, axis=-1)
 kernel_motion_blur = tf.cast(kernel_motion_blur, tf.float32)
 
 
-def random_flip_horizontal(image, boxes):
-    if tf.random.uniform(()) > 0.5:
+def random_flip_horizontal(image, boxes, prob=0.5):
+    if tf.random.uniform(()) > prob:
         image = tf.image.flip_left_right(image)
         boxes = tf.stack(
             [1 - boxes[:, 2], boxes[:, 1], 1 - boxes[:, 0], boxes[:, 3]], axis=-1
@@ -21,16 +21,16 @@ def random_flip_horizontal(image, boxes):
     return image, boxes
 
 
-def random_adjust_contrast(image):
-    if tf.random.uniform(()) > 0.5:
+def random_adjust_contrast(image, prob=0.5):
+    if tf.random.uniform(()) > prob:
         factor = tf.random.uniform((), 0.5, 2.0)
         return tf.image.adjust_contrast(image, factor)
 
     return image
 
 
-def random_adjust_brightness(image):
-    if tf.random.uniform(()) > 0.5:
+def random_adjust_brightness(image, prob=0.5):
+    if tf.random.uniform(()) > prob:
         return tf.image.random_brightness(image, 0.06)
 
     return image
@@ -57,3 +57,26 @@ def random_gaussian_blur(img, prob=0.9):
         return tf.cast(img[0], dtype=tf.uint8)
 
     return img
+
+
+class Augmentor:
+    def __init__(
+        self,
+        blur=0.8,
+        horizontal_flip=0.5,
+        brightness=0.5,
+        contrast=0.5
+    ):
+
+    self.blur = blur
+    self.horizontal_flip = horizontal_flip
+    self.brightness = brightness
+    self.contrast = contrast
+
+    def augment(self, image, boxes, labels):
+        image, boxes = random_flip_horizontal(image, boxes, self.horizontal_flip)
+        image = random_adjust_brightness(image, self.brightness)
+        image = random_adjust_contrast(image, self.contrast)
+        image = random_gaussian_blur(image, self.blur)
+
+        return image, boxes, labels
