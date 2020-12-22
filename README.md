@@ -27,6 +27,16 @@ In detail, I will crop the image into a few parts with some overlaps, predict ea
 ### 3. Combine the results
 ![tiling](./images/tiling_pred.png)
 
+## Data augmentation
+
+Data augmentation used for trainning includes:
+
+1. Random brightness adjustment (p=50%)
+2. Random contrast adjustment (p=50%)
+3. Auto crop a region contains at least 1 bouding box (p=50%)
+4. Random horizontal flipping (p=50%)
+5. Random gaussian blur or motion blur (p=50%)
+
 
 ## Trainning
 
