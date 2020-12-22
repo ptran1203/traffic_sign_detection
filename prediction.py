@@ -41,10 +41,12 @@ class Prediction:
 
     def set_height(self, height):
         self.image_height = height
+        self.crop_height = height // 3
         self.g_slice_indices_y = self.get_slice_indices(height)
 
     def set_width(self, width):
         self.image_width = width
+        self.crop_size = width // 3
         self.g_slice_indices = self.get_slice_indices(width)
 
     def get_offset(self, idx):
@@ -60,7 +62,7 @@ class Prediction:
         over = self.overlap
         num_paths = math.ceil(full_size / crop_s)
 
-        if full_size == self.image_height:
+        if full_size == self.image_height and full_size != self.image_width:
             if self.crop_height == 0:
                 return [[0, self.image_height]]
             crop_s = self.crop_height
@@ -132,16 +134,16 @@ class Prediction:
                 img_up = tf.image.resize(img_up, (626, 1622))
                 cv2_imshow(img_up.numpy()[0] + 123)
 
-        detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
+            detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
 
-        boxes = detections.nmsed_boxes / ratio
-        for i, valids in enumerate(detections.valid_detections):
-            if valids > 0:
-                for j in range(valids):
-                    all_boxes.append(self.revert_bboxes(boxes, i)[j])
+            boxes = detections.nmsed_boxes / ratio
+            for i, valids in enumerate(detections.valid_detections):
+                if valids > 0:
+                    for j in range(valids):
+                        all_boxes.append(self.revert_bboxes(boxes, i)[j])
 
-                all_classes.append(detections.nmsed_classes[i][:valids])
-                all_scores.append(detections.nmsed_scores[i][:valids])
+                    all_classes.append(detections.nmsed_classes[i][:valids])
+                    all_scores.append(detections.nmsed_scores[i][:valids])
 
         len_detections = len(all_boxes)
 
