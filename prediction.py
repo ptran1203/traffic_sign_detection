@@ -235,7 +235,13 @@ def get_inference_model():
 
     return inference_model
 
-def combine_prediction(prediction_1, prediction_2, weight_1=0.6):
+def combine_prediction(
+    prediction_1,
+    prediction_2,
+    weight_1=0.6,
+    max_detections=50,
+    iou_threshold=0.5,
+    score_threshold=0.5):
     boxes_1, scores_1, classes_1 = prediction_1
     boxes_2, scores_2, classes_2 = prediction_2
 
@@ -261,9 +267,9 @@ def combine_prediction(prediction_1, prediction_2, weight_1=0.6):
     selected_indices =  tf.image.non_max_suppression(
         boxes,
         scores,
-        50,
-        iou_threshold=0.5,
-        score_threshold=confi_thre,
+        max_detections,
+        iou_threshold=iou_threshold,
+        score_threshold=score_threshold,
     )
 
     return (tf.gather(boxes, selected_indices),
