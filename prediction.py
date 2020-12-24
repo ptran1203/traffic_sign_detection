@@ -41,12 +41,12 @@ class Prediction:
 
     def set_height(self, height):
         self.image_height = height
-        self.crop_height = height // 3
+        self.crop_height = height // 2
         self.g_slice_indices_y = self.get_slice_indices(height)
 
     def set_width(self, width):
         self.image_width = width
-        self.crop_size = width // 3
+        self.crop_size = width // 2
         self.g_slice_indices = self.get_slice_indices(width)
 
     def get_offset(self, idx):
@@ -82,33 +82,47 @@ class Prediction:
 
         return slices
 
-    def get_input_img(self, sample, crop=False):
+    def get_input_img(self, sample, crop=False, crop_size=512):
         sample = tf.io.parse_single_example(sample, data_processing.image_feature_description)
 
         image = tf.image.decode_png(sample["image"])
 
         if self.dynamic_size:
-            shape = image.get_shape().value
-            self.set_height(shape[1])
-            self.set_width(shape[0])
+            shape = image.shape
+            self.set_height(shape[0])
+            self.set_width(shape[1])
 
         train_imgs = []
         small_imgs = []
+
         if crop:
             ratio = 0
             for start_y, end_y in self.g_slice_indices_y:
                 for start_x, end_x in self.g_slice_indices:
                     small_img = image[start_y:end_y, start_x: end_x, :]
-                    croped, _, ratio = utils.resize_and_pad_image(small_img, jitter=None)
+                    if start_x + self.crop_size > self.image_width:
+                        start_x = self.image_width -  self.crop_size
+                    if start_y + self.crop_height > self.image_height:
+                        start_y = self.image_height - self.crop_height
+                    
+                    small_img = tf.slice(image, [start_y, start_x, 0], [self.crop_height, self.crop_size, 3])
+
+                    croped, _, ratio = utils.resize_and_pad_image(small_img,
+                                                                  crop_size,
+                                                                  crop_size, jitter=None)
                     train_imgs.append(tf.expand_dims(croped, axis=0))
                     small_imgs.append(small_img)
 
             return [tf.keras.applications.resnet.preprocess_input(i) for i in train_imgs], image, ratio
 
         else:
-            train_img, _, ratio = utils.resize_and_pad_image(image, jitter=None)
+            train_img, _, ratio = utils.resize_and_pad_image(image,
+                                                             crop_size,
+                                                             crop_size,
+                                                             jitter=None)
             train_img = tf.keras.applications.resnet.preprocess_input(train_img)
             return tf.expand_dims(train_img, axis=0), image, ratio
+
 
     def revert_bboxes(self, boxes, idx):
         offset_x, offset_y = self.get_offset(idx)
@@ -119,68 +133,84 @@ class Prediction:
             boxes[idx, :, 3] + offset_y,
         ], axis=-1)
 
-    def detect_single_image(self, sample, show=False):
+    def detect_single_image(self, sample, crop_sizes=[], show=False):
         all_boxes = []
         all_scores = []
         all_classes = []
 
-        input_img, image, ratio = self.get_input_img(sample, crop=True)
+        sboxes, sscores, sclasses = [], [], []
 
-        if show:
-            for c in range(self.seperate_y):
-                start = self.seperate * c
-                end = start + self.seperate
-                img_up = tf.concat(input_img[start:end], 2)
-                img_up = tf.image.resize(img_up, (626, 1622))
-                cv2_imshow(img_up.numpy()[0] + 123)
+        if not crop_sizes:
+            crop_sizes = [512, 1024, 1280, 1420]
 
-            detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
+        detected = False
+        input_img, image, ratio = self.get_input_img(sample, crop=True, crop_size=1024)
 
-            boxes = detections.nmsed_boxes / ratio
-            for i, valids in enumerate(detections.valid_detections):
-                if valids > 0:
-                    for j in range(valids):
-                        all_boxes.append(self.revert_bboxes(boxes, i)[j])
+        detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
 
-                    all_classes.append(detections.nmsed_classes[i][:valids])
-                    all_scores.append(detections.nmsed_scores[i][:valids])
+        boxes = detections.nmsed_boxes / ratio
+        for i, valids in enumerate(detections.valid_detections):
+            if valids > 0:
+                for j in range(valids):
+                    sboxes.append(self.revert_bboxes(boxes, i)[j])
 
-        len_detections = len(all_boxes)
+                sclasses.append(detections.nmsed_classes[i][:valids])
+                sscores.append(detections.nmsed_scores[i][:valids])
 
-        input_img, image, ratio = self.get_input_img(sample, crop=False)
-        detections = self.inference_model.predict(input_img)
-        num_detections = detections.valid_detections[0]
-        big_size_boxes = []
-        big_size_classes = []
-        big_size_scores = []
-        if num_detections:
-            big_size_boxes.append(detections.nmsed_boxes[0][:num_detections] / ratio)
-            big_size_scores.append(detections.nmsed_scores[0][:num_detections])
-            big_size_classes.append(detections.nmsed_classes[0][:num_detections])
+        small_detections = len(sboxes)
 
-        if len_detections:
-            all_boxes = tf.stack(all_boxes)
+        show and print(f"Found {small_detections} objects in small parts")
+
+        for crop_size in crop_sizes:
+            input_img, image, ratio = self.get_input_img(sample, crop=False, crop_size=crop_size)
+            detections = self.inference_model.predict(input_img)
+            num_detections = detections.valid_detections[0]
+
+            if num_detections:
+                detected = True
+                show and print(f"Found {num_detections} objects at scale {crop_size}")
+
+                all_boxes.append(detections.nmsed_boxes[0][:num_detections] / ratio)
+                all_scores.append(detections.nmsed_scores[0][:num_detections])
+                all_classes.append(detections.nmsed_classes[0][:num_detections])
+
+        if small_detections:       
+            if len(all_classes):
+                all_boxes = tf.concat(all_boxes, 0)
+                all_scores = tf.concat(all_scores, 0)
+                all_classes = tf.concat(all_classes, 0)
+
+                if detected:
+                    all_boxes = tf.concat([all_boxes,tf.stack(sboxes) ], 0)
+                    all_scores = tf.concat([all_scores, tf.concat(sscores, 0)], 0)
+                    all_classes = tf.concat([all_classes, tf.concat(sclasses, 0)], 0)
+            else:
+                all_boxes = tf.stack(sboxes)
+                all_scores =  tf.concat(sscores, 0)
+                all_classes = tf.concat(sclasses, 0)
+
+
+        elif detected:
+            all_boxes = tf.concat(all_boxes, 0)
             all_scores = tf.concat(all_scores, 0)
             all_classes = tf.concat(all_classes, 0)
-            if num_detections:
-                all_boxes = tf.concat([all_boxes, tf.concat(big_size_boxes, 0)], 0)
-                all_classes = tf.concat([all_classes, tf.concat(big_size_classes, 0)], 0)
-                all_scores = tf.concat([all_scores, tf.concat(big_size_scores, 0)], 0)
 
-            preds = tf.image.non_max_suppression(
+        if detected or small_detections:
+            selected_indices = tf.image.non_max_suppression(
                 all_boxes,
                 all_scores,
-                100,
-                iou_threshold=0.3,
-                score_threshold=0.5,
+                50,
+                iou_threshold=0.5,
+                score_threshold=confi_thre,
             )
-            preds = preds.numpy()
 
-            if len(preds):
+            selected_indices = selected_indices.numpy()
+
+            if len(selected_indices):
                 return (image,
-                        tf.gather(all_boxes, preds),
-                        tf.gather(all_scores, preds),
-                        tf.gather(all_classes, preds))
+                        tf.gather(all_boxes, selected_indices),
+                        tf.gather(all_scores, selected_indices),
+                        tf.gather(all_classes, selected_indices))
 
         return image, all_boxes, all_scores, all_classes
 
@@ -205,6 +235,40 @@ def get_inference_model():
 
     return inference_model
 
+def combine_prediction(prediction_1, prediction_2, weight_1=0.6):
+    boxes_1, scores_1, classes_1 = prediction_1
+    boxes_2, scores_2, classes_2 = prediction_2
+
+    weight_2 = 1 - weight_1
+
+    if not len(scores_1) and len(scores_2):
+        scores = scores_2 * weight_2
+        boxes = boxes_2
+        classes = classes_2
+    elif not len(scores_2) and len(scores_1):
+        scores = scores_1
+        boxes = boxes_1
+        classes = classes_1
+
+    else:
+        scores_1 *= weight_1
+        scores_2 *= weight_2
+
+        boxes = tf.concat([boxes_1, boxes_2], 0)
+        scores = tf.concat([scores_1, scores_2], 0)
+        classes = tf.concat([classes_1, classes_2], 0)
+
+    selected_indices =  tf.image.non_max_suppression(
+        boxes,
+        scores,
+        50,
+        iou_threshold=0.5,
+        score_threshold=confi_thre,
+    )
+
+    return (tf.gather(boxes, selected_indices),
+            tf.gather(scores, selected_indices),
+            tf.gather(classes, selected_indices))
 
 def get_test_data_info(input_path):
     id_list = os.listdir(input_path)

@@ -81,8 +81,8 @@ class RetinaNetLoss(tf.losses.Loss):
         box_loss = self._box_loss(box_labels, box_predictions)
 
         if self._label_smoothing:
-            clf_loss = tf.where(tf.greater(ignore_mask, 0.91), 0.0, clf_loss)
-            box_loss = tf.where(tf.greater(positive_mask, 0.91), box_loss, 0.0)
+            clf_loss = tf.where(tf.greater(ignore_mask, 0.8), 0.0, clf_loss)
+            box_loss = tf.where(tf.equal(positive_mask, 1), box_loss, 0.0)
         else:
             clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
             box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
