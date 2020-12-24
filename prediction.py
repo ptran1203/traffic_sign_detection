@@ -201,7 +201,7 @@ class Prediction:
                 all_scores,
                 50,
                 iou_threshold=0.5,
-                score_threshold=confi_thre,
+                score_threshold=0.5,
             )
 
             selected_indices = selected_indices.numpy()
