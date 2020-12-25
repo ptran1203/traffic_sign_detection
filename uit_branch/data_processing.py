@@ -84,10 +84,7 @@ class DataProcessing:
         y1 = tf.cast(y1, tf.int32)
         y2 = tf.cast(y2, tf.int32)
 
-        # 60% part of object lie inside the frame is considered valid
-        accept_ratio = 0.6
-        mean_x1, mean_x2 = tf.reduce_mean(bbox[:, 0]), tf.reduce_mean(bbox[:, 2])
-        pad_size = accept_ratio * (mean_x2 - mean_x1)
+        pad_size = 10
 
         x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
         y1 = tf.random.uniform((), y1 - height, y1, dtype=tf.int32)
@@ -137,7 +134,13 @@ class DataProcessing:
         cond = tf.logical_and(x_condition, y_condition)
         positive_mask = tf.where(cond)
 
-        bbox = self.moved_box(bbox, x1, y1, width, height)
+        bbox = self.moved_box(
+            bbox,
+            x1,
+            y1,
+            tf.cast(self.origin_width, tf.float32) / width,
+            tf.cast(self.origin_height, tf.float32) / height)
+
         bbox = tf.gather_nd(bbox, positive_mask)
         labels = tf.gather_nd(labels, positive_mask)
 
@@ -152,25 +155,28 @@ class DataProcessing:
         label = tf.io.decode_raw(sample["label"], out_type=tf.int64)
         bbox = tf.reshape(bbox, (-1, 4))
 
-        shape = tf.cast(tf.shape(image), tf.float32)
+        shape = tf.shape(image)
 
-        int_shape = image.shape
-        self.set_height(int_shape[0])
-        self.set_width(int_shape[1])
+
+        self.set_height(shape[0])
+        self.set_width(shape[1])
+
+        shape = tf.cast(shape, tf.float32)
+        width = shape[1]
+        height = shape[0]
 
         bbox = tf.stack([
-            tf.maximum(bbox[:, 0], 1),
-            tf.maximum(bbox[:, 1], 1),
-            tf.minimum(bbox[:, 2], shape[1] - 1),
-            tf.minimum(bbox[:, 3], shape[0] - 1),       
+            tf.maximum(bbox[:, 0], 0),
+            tf.maximum(bbox[:, 1], 0),
+            tf.minimum(bbox[:, 2], width),
+            tf.minimum(bbox[:, 3], height), 
         ], axis=-1)
+
         
-        bbox = normalize_bbox(bbox,
-                              tf.cast(shape[1], tf.float32),
-                              tf.cast(shape[0], tf.float32))
+        if tf.random.uniform(()) > 0.5:
+            image, bbox, label = self.random_crop(image, bbox, label)
         
         if self.augment:
-            image, bbox = random_flip_horizontal(image, bbox, 0.5)
             image = random_adjust_brightness(image)
             image = random_adjust_contrast(image)
 
@@ -180,6 +186,9 @@ class DataProcessing:
             if tf.random.uniform(()) > 0.8:
                 image = tf.image.random_saturation(image, 0.1, 0.5)
 
+        bbox = normalize_bbox(bbox, width, height)
+
+        image, bbox = random_flip_horizontal(image, bbox, 0.5)
         image, image_shape, _ = resize_and_pad_image(image,
                                                      self.resize,
                                                      self.resize, jitter=None)

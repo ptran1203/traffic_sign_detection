@@ -200,7 +200,7 @@ class Prediction:
                 all_boxes,
                 all_scores,
                 50,
-                iou_threshold=0.5,
+                iou_threshold=0.1,
                 score_threshold=0.5,
             )
 
