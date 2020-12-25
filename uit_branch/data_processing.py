@@ -174,16 +174,19 @@ class DataProcessing:
 
         
         if tf.random.uniform(()) > 0.5:
-            image, bbox, label = self.random_crop(image, bbox, label)
+            try:
+                image, bbox, label = self.random_crop(image, bbox, label)
+            except:
+                pass
         
         if self.augment:
             image = random_adjust_brightness(image)
             image = random_adjust_contrast(image)
 
-            if tf.random.uniform(()) > 0.8:
+            if tf.random.uniform(()) >= 0.8:
                 image = tf.image.random_hue(image, 0.1)
 
-            if tf.random.uniform(()) > 0.8:
+            if tf.random.uniform(()) >= 0.8:
                 image = tf.image.random_saturation(image, 0.1, 0.5)
 
         bbox = normalize_bbox(bbox, width, height)
@@ -216,10 +219,10 @@ class DataProcessing:
                     image = image * r + image_ * (1 - r)
 
             # copy-paste
-            image, bbox, label = self.copy_paste(
-                image, bbox, label,
-                image_, bbox_, label_
-            )
+            # image, bbox, label = self.copy_paste(
+            #     image, bbox, label,
+            #     image_, bbox_, label_
+            # )
 
         if self.convert and not self.is_iter:
             bbox = convert_to_xywh(bbox)
