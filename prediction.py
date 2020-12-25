@@ -133,7 +133,7 @@ class Prediction:
             boxes[idx, :, 3] + offset_y,
         ], axis=-1)
 
-    def detect_single_image(self, sample, crop_sizes=[], show=False):
+    def detect_single_image(self, sample, crop_sizes=[], show=False, tiling=False):
         all_boxes = []
         all_scores = []
         all_classes = []
@@ -141,24 +141,24 @@ class Prediction:
         sboxes, sscores, sclasses = [], [], []
 
         if not crop_sizes:
-            crop_sizes = [512, 1024, 1280, 1420]
+            crop_sizes = [1024, 1280, 1420]
 
         detected = False
-        input_img, image, ratio = self.get_input_img(sample, crop=True, crop_size=1024)
+        if tiling:
+            input_img, image, ratio = self.get_input_img(sample, crop=True, crop_size=1024)
 
-        detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
+            detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
 
-        boxes = detections.nmsed_boxes / ratio
-        for i, valids in enumerate(detections.valid_detections):
-            if valids > 0:
-                for j in range(valids):
-                    sboxes.append(self.revert_bboxes(boxes, i)[j])
+            boxes = detections.nmsed_boxes / ratio
+            for i, valids in enumerate(detections.valid_detections):
+                if valids > 0:
+                    for j in range(valids):
+                        sboxes.append(self.revert_bboxes(boxes, i)[j])
 
-                sclasses.append(detections.nmsed_classes[i][:valids])
-                sscores.append(detections.nmsed_scores[i][:valids])
+                    sclasses.append(detections.nmsed_classes[i][:valids])
+                    sscores.append(detections.nmsed_scores[i][:valids])
 
         small_detections = len(sboxes)
-
         show and print(f"Found {small_detections} objects in small parts")
 
         for crop_size in crop_sizes:
@@ -238,23 +238,28 @@ def get_inference_model():
 def combine_prediction(
     prediction_1,
     prediction_2,
-    weight_1=0.6,
+    weight_1=1,
     max_detections=50,
     iou_threshold=0.5,
-    score_threshold=0.5):
+    score_threshold=0.65):
     boxes_1, scores_1, classes_1 = prediction_1
     boxes_2, scores_2, classes_2 = prediction_2
 
     weight_2 = 1 - weight_1
-
+    highest = max(weight_1, weight_2)
+    score_threshold *= highest
+    
     if not len(scores_1) and len(scores_2):
         scores = scores_2 * weight_2
         boxes = boxes_2
         classes = classes_2
     elif not len(scores_2) and len(scores_1):
-        scores = scores_1
+        scores = scores_1 * weight_1
         boxes = boxes_1
         classes = classes_1
+
+    elif not len(scores_1) and not len(scores_2):
+        return boxes_1, scores_1, classes_1
 
     else:
         scores_1 *= weight_1
@@ -273,7 +278,7 @@ def combine_prediction(
     )
 
     return (tf.gather(boxes, selected_indices),
-            tf.gather(scores, selected_indices),
+            tf.gather(scores / highest, selected_indices),
             tf.gather(classes, selected_indices))
 
 def get_test_data_info(input_path):
