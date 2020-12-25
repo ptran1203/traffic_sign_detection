@@ -43,12 +43,12 @@ class Prediction:
 
     def set_height(self, height):
         self.image_height = height
-        self.crop_height = height // 2
+        self.crop_height = height // 4
         self.g_slice_indices_y = self.get_slice_indices(height)
 
     def set_width(self, width):
         self.image_width = width
-        self.crop_size = width // 2
+        self.crop_size = width // 4
         self.g_slice_indices = self.get_slice_indices(width)
 
     def get_offset(self, idx):
