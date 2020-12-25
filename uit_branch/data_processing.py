@@ -76,12 +76,12 @@ class Decoder:
             bbox[:, 3] * w,
         ], axis=-1)
 
-        # mixup
         if self.iterator and not self.is_iter:
             image_, bbox_, label_ = self.iterator.get_next()
             shape = tf.shape(image)
             shape_ = tf.shape(image_)
 
+            # mixup
             if shape_[0] == shape[0] and shape[1] == shape_[1]:
                 image = tf.cast(image, tf.float32)
                 if tf.size(label_) > 0:
@@ -90,6 +90,12 @@ class Decoder:
                     r = tf.random.uniform((), 0.35, 0.65)
                     image = image * r + image_ * (1 - r)
 
+            # copy-paste
+            image, bbox, label = self.copy_paste(
+                image, bbox, label,
+                image_, bbox_, label_
+            )
+
         if self.convert and not self.is_iter:
             bbox = convert_to_xywh(bbox)
 
@@ -97,7 +103,7 @@ class Decoder:
 
     def copy_paste(self, image_1, box_1, label_1, image_2, box_2, label_2):
         """Copy objects from image_2 to image_1"""
-        pass
+        return  image_1, box_1, label_1
 
 
     def mixup(self, img1, img2, mixup_ratio):
