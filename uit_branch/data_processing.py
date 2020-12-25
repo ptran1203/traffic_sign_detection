@@ -18,18 +18,125 @@ image_feature_description = {
     "image": tf.io.FixedLenFeature([], tf.string),
 }
 
-class Decoder:
+class DataProcessing:
+    """
+    Some function are implemented at traffic_sign_detection/data_processing.py
+    """
     def __init__(self,
                 iterator=None,
                 is_iter=False,
                 convert=True,
-                crop_size=512,
-                augment=True):
+                resize=512,
+                augment=True,
+                crop_width=256,
+                crop_height=256):
         self.convert = convert
         self.iterator = iterator
         self.is_iter = is_iter
-        self.crop_size = crop_size
+        self.resize = resize
+        self.crop_width = crop_width
+        self.crop_height = crop_height
         self.augment = augment
+
+    def moved_box(self, box, x1, y1, scale_x, scale_y):
+        x1, y1 = tf.cast(x1, tf.float32), tf.cast(y1, tf.float32)
+
+        return tf.stack([
+            (box[:, 0] - x1) * scale_x,
+            (box[:, 1] - y1) * scale_y,
+            (box[:, 2] - x1) * scale_x,
+            (box[:, 3] - y1) * scale_y,
+        ], axis=1)
+
+    def set_height(self, height):
+        self.origin_height = height
+
+    def set_width(self, width):
+        self.origin_width = width
+
+    def get_slice_indices(self):
+        num_paths = math.ceil(self.origin_width / self.width)
+        slices = []
+        for i in range(num_paths):
+            start = max(self.width * i - self.overlap_x, 0)
+            end = start + self.width
+            if end > self.origin_width:
+                start = end - self.origin_width
+                end = self.origin_width
+
+            slices.append([start, end])
+
+        return slices
+
+    def random_crop(self, image, bbox, labels):
+        width = self.crop_width
+        height = self.crop_height
+        idx = tf.random.uniform((), 0, tf.shape(bbox)[0], tf.int32)
+        selected_box = bbox[idx]
+        x1, y1, x2, y2 = tf.unstack(selected_box, axis=0)
+        x1 = tf.cast(x1, tf.int32)
+        x2 = tf.cast(x2, tf.int32)
+        y1 = tf.cast(y1, tf.int32)
+        y2 = tf.cast(y2, tf.int32)
+
+        # 60% part of object lie inside the frame is considered valid
+        accept_ratio = 0.6
+        mean_x1, mean_x2 = tf.reduce_mean(bbox[:, 0]), tf.reduce_mean(bbox[:, 2])
+        pad_size = accept_ratio * (mean_x2 - mean_x1)
+
+        x1 = tf.random.uniform((), x1 - width, x1, dtype=tf.int32)
+        y1 = tf.random.uniform((), y1 - height, y1, dtype=tf.int32)
+
+        if tf.less(x1, 0):
+            x1 = 0
+
+        if tf.less(y1, 0):
+            y1 = 0
+
+        if tf.greater(x1 + width, self.origin_width):
+            x1 = self.origin_width - width
+
+        if tf.greater(y1 + height, self.origin_height):
+            y1 = self.origin_height - height
+
+        if tf.greater(y2, y1 + height):
+            y1 = y1 + (y2 - (y1 + height))
+
+        if tf.greater(x2, x1 + width):
+            x1 = x1 + (x2 - (x1 + width))
+
+        # [height, width, channels]
+        cropped = tf.slice(image, [y1, x1, 0], [height, width, 3])
+
+        x1 = tf.cast(x1, tf.float32)
+        y1 = tf.cast(y1, tf.float32)
+        width = tf.cast(width, tf.float32)
+        height = tf.cast(height, tf.float32)
+
+        # filter out boxes that not lie inside the cropped image
+        x1_b, y1_b, x2_b, y2_b = tf.unstack(bbox, axis=1)
+
+        # 1. x1 of box > cropped width
+        # 2. x2 of box < cropped width
+        x_condition = tf.logical_and(
+            tf.greater(x1_b, x1 - pad_size),
+            tf.less(x2_b, x1 + width + pad_size)
+        )
+        # 3. y1 of box> cropped height
+        # 4. y2 of box> cropped height
+        y_condition = tf.logical_and(
+            tf.greater(y1_b, y1 - pad_size),
+            tf.less(y2_b, y1 + height + pad_size)
+        )
+
+        cond = tf.logical_and(x_condition, y_condition)
+        positive_mask = tf.where(cond)
+
+        bbox = self.moved_box(bbox, x1, y1, width, height)
+        bbox = tf.gather_nd(bbox, positive_mask)
+        labels = tf.gather_nd(labels, positive_mask)
+
+        return cropped, bbox, labels
 
     def decode_sample(self, example):
         sample = tf.io.parse_single_example(example, image_feature_description)
@@ -41,6 +148,10 @@ class Decoder:
         bbox = tf.reshape(bbox, (-1, 4))
 
         shape = tf.cast(tf.shape(image), tf.float32)
+
+        int_shape = image.shape
+        self.set_height(int_shape[0])
+        self.set_width(int_shape[1])
 
         bbox = tf.stack([
             tf.maximum(bbox[:, 0], 1),
@@ -65,8 +176,8 @@ class Decoder:
                 image = tf.image.random_saturation(image, 0.1, 0.5)
 
         image, image_shape, _ = resize_and_pad_image(image,
-                                                     self.crop_size,
-                                                     self.crop_size, jitter=None)
+                                                     self.resize,
+                                                     self.resize, jitter=None)
         w, h = image_shape[0], image_shape[1]
 
         bbox = tf.stack([
