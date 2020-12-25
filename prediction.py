@@ -175,14 +175,13 @@ class Prediction:
                     sclasses.append(detections.nmsed_classes[i][:valids])
                     sscores.append(detections.nmsed_scores[i][:valids])
 
-            sboxes = tf.stack(sboxes)
-            sscores = tf.concat(sscores, 0)
-            sclasses = tf.concat(sclasses, 0)
+            if len(sboxes):
+                sboxes = tf.stack(sboxes)
+                sscores = tf.concat(sscores, 0)
+                sclasses = tf.concat(sclasses, 0)
 
-            sboxes, sscores, sclasses = self.big_box_filter(image,
-                                                    sboxes, sscores, sclasses)
-            # print(sboxes)
-
+                sboxes, sscores, sclasses = self.big_box_filter(image,
+                                                        sboxes, sscores, sclasses)
 
         small_detections = len(sboxes)
         show and print(f"Found {small_detections} objects in small parts - {sscores}")
