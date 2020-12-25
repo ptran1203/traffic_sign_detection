@@ -95,13 +95,13 @@ class Decoder:
 
         return image, bbox, label
 
-    def mixup(self, img1, img2, mixup_ratio):
-        shape1, shape2 = tf.shape(img1), tf.shape(img2)
-        height = tf.maximum(shape1[0], shape2[0])
-        width = tf.maximum(shape1[1], shape2[1])
+    def copy_paste(self, image_1, box_1, label_1, image_2, box_2, label_2):
+        """Copy objects from image_2 to image_1"""
+        pass
 
-        # mix_img = tf.zeros((height, width, 3), dtype=tf.float32)
-        return img1 * mixup_ratio + img2 * (1-mixup_ratio)
+
+    def mixup(self, img1, img2, mixup_ratio):
+        # TODO: perform slice assignment
         mix_img[:shape1[0], :shape1[1], :].assign()
         mix_img[:shape2[0], :shape2[0], :].assign(mix_img[:shape2[0], :shape2[0], :] +  img2 * (1-mixup_ratio))
         return mix_img
