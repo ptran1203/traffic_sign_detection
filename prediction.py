@@ -27,10 +27,12 @@ class Prediction:
     image_width=1622,
     crop_height=300,
     overlap=75,
-    dynamic_size=False):
+    dynamic_size=False,
+    tiling_size=968):
         self.crop_size = crop_size
         self.crop_height = crop_height
         self.image_width = image_width
+        self.tiling_size = tiling_size
         self.image_height = image_height
         self.overlap = overlap
         self.dynamic_size = dynamic_size
@@ -134,7 +136,7 @@ class Prediction:
         ], axis=-1)
 
     @staticmethod
-    def big_box_filter(image, boxes, scores, classes, threshold=.25):
+    def big_box_filter(image, boxes, scores, classes, threshold=.12):
         img_h, img_w, _ = image.shape
         fboxes, fscores, fclasses = [], [], []
         for box, score, cls in zip(boxes, scores, classes):
@@ -160,7 +162,7 @@ class Prediction:
 
         detected = False
         if tiling:
-            input_img, image, ratio = self.get_input_img(sample, crop=True, crop_size=1024)
+            input_img, image, ratio = self.get_input_img(sample, crop=True, crop_size=self.tiling_size)
 
             detections = self.inference_model.predict_on_batch(tf.concat(input_img, 0))
 
