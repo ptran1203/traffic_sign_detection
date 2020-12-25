@@ -55,9 +55,11 @@ class DataProcessing:
 
     def set_height(self, height):
         self.origin_height = height
+        self.crop_height = height // 3
 
     def set_width(self, width):
         self.origin_width = width
+        self.crop_width = width // 3
 
     def get_slice_indices(self):
         num_paths = math.ceil(self.origin_width / self.width)

@@ -133,6 +133,21 @@ class Prediction:
             boxes[idx, :, 3] + offset_y,
         ], axis=-1)
 
+    @staticmethod
+    def big_box_filter(image, boxes, scores, classes, threshold=.25):
+        img_h, img_w, _ = image.shape
+        fboxes, fscores, fclasses = [], [], []
+        for box, score, cls in zip(boxes, scores, classes):
+            x1, y1, x2, y2 = box
+            w, h = x2 - x1, y2 - y1
+            if w / img_w <= threshold and h / img_h <= threshold:
+                fboxes.append(box)
+                fscores.append(score)
+                fclasses.append(cls)
+
+        return tf.stack(fboxes), tf.stack(fscores), tf.stack(fclasses)
+
+
     def detect_single_image(self, sample, crop_sizes=[], show=False, tiling=False):
         all_boxes = []
         all_scores = []
@@ -158,8 +173,17 @@ class Prediction:
                     sclasses.append(detections.nmsed_classes[i][:valids])
                     sscores.append(detections.nmsed_scores[i][:valids])
 
+            sboxes = tf.stack(sboxes)
+            sscores = tf.concat(sscores, 0)
+            sclasses = tf.concat(sclasses, 0)
+
+            sboxes, sscores, sclasses = self.big_box_filter(image,
+                                                    sboxes, sscores, sclasses)
+            # print(sboxes)
+
+
         small_detections = len(sboxes)
-        show and print(f"Found {small_detections} objects in small parts")
+        show and print(f"Found {small_detections} objects in small parts - {sscores}")
 
         for crop_size in crop_sizes:
             input_img, image, ratio = self.get_input_img(sample, crop=False, crop_size=crop_size)
@@ -168,10 +192,11 @@ class Prediction:
 
             if num_detections:
                 detected = True
-                show and print(f"Found {num_detections} objects at scale {crop_size}")
+                scores = detections.nmsed_scores[0][:num_detections]
+                show and print(f"Found {num_detections} objects at scale {crop_size} - {scores}")
 
                 all_boxes.append(detections.nmsed_boxes[0][:num_detections] / ratio)
-                all_scores.append(detections.nmsed_scores[0][:num_detections])
+                all_scores.append(scores)
                 all_classes.append(detections.nmsed_classes[0][:num_detections])
 
         if small_detections:       
@@ -181,13 +206,13 @@ class Prediction:
                 all_classes = tf.concat(all_classes, 0)
 
                 if detected:
-                    all_boxes = tf.concat([all_boxes,tf.stack(sboxes) ], 0)
-                    all_scores = tf.concat([all_scores, tf.concat(sscores, 0)], 0)
-                    all_classes = tf.concat([all_classes, tf.concat(sclasses, 0)], 0)
+                    all_boxes = tf.concat([all_boxes, sboxes ], 0)
+                    all_scores = tf.concat([all_scores, sscores], 0)
+                    all_classes = tf.concat([all_classes, sclasses], 0)
             else:
-                all_boxes = tf.stack(sboxes)
-                all_scores =  tf.concat(sscores, 0)
-                all_classes = tf.concat(sclasses, 0)
+                all_boxes = sboxes
+                all_scores =  sscores
+                all_classes = sclasses
 
 
         elif detected:
