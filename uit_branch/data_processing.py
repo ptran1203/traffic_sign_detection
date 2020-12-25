@@ -1,6 +1,11 @@
 import tensorflow as tf
 import numpy as np
-import data_augmentation as augmentation
+from data_augmentation import (
+    random_adjust_brightness,
+    random_adjust_contrast,
+    random_flip_horizontal,
+    random_gaussian_blur
+)
 from utils import (
     resize_and_pad_image,
     swap_xy,
