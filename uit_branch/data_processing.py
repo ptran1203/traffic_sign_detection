@@ -23,6 +23,16 @@ image_feature_description = {
     "image": tf.io.FixedLenFeature([], tf.string),
 }
 
+def has_small_bbox(width, height, bboxes):
+    w, h = (bboxes[:, 2] - bboxes[:, 0]), (bboxes[:, 3] - bboxes[:, 1])
+    rate_w, rate_h = w / width, h / height
+    return tf.math.reduce_any(
+        tf.logical_or(
+            tf.math.less(rate_w, 0.08),
+            tf.math.less(rate_h, 0.08)
+        )
+    )
+
 class DataProcessing:
     """
     Some function are implemented at traffic_sign_detection/data_processing.py
@@ -175,11 +185,8 @@ class DataProcessing:
         ], axis=-1)
 
         
-        if tf.random.uniform(()) > 0.5:
-            try:
-                image, bbox, label = self.random_crop(image, bbox, label)
-            except:
-                pass
+        if has_small_bbox(width, height, bbox) and tf.random.uniform(()) > 0.5:
+            image, bbox, label = self.random_crop(image, bbox, label)
         
         if self.augment:
             image = random_adjust_brightness(image)
@@ -206,7 +213,7 @@ class DataProcessing:
             bbox[:, 3] * w,
         ], axis=-1)
 
-        if self.iterator and not self.is_iter:
+        if self.iterator and not self.is_iter and tf.random.uniform(()) > 0.5:
             image_, bbox_, label_ = self.iterator.get_next()
             shape = tf.shape(image)
             shape_ = tf.shape(image_)
