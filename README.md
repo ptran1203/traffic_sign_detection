@@ -18,7 +18,7 @@ In detail, I will crop the image into a few parts with some overlaps, predict ea
 ### 1. Image cropping
 ![tiling](./images/tiling.png)
 
-### 2. Predict on each part
+### 2. Predict on each part (the color looks strange because the images are pre-processed)
 ![tiling](./images/tiling_pred_small.png)
 
 ### 3. Predict on the whole image
