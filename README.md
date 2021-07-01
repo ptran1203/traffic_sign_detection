@@ -47,9 +47,10 @@ python3 train.py --input [path to training images]
 ## Inference
 
 ```bash
-./predict.sh
-or
-python3 prediction.py --input [path to test images] --output [path to submission file]
+!python3 prediction.py --input {image_dir}\
+                       --output submission.json\
+                       --weight weights/weight_dense.h5\
+                       --save-dir /content/inference_images
 ```
 
 ## Inference result
