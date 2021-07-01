@@ -306,21 +306,7 @@ def combine_prediction(
             tf.gather(classes, selected_indices))
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Traffic sign detection')
-    parser.add_argument("--input",
-                        metavar="I", type=str, default="/data/images",
-                        help="Path to input images")
-    parser.add_argument("--output", metavar="O", type=str,
-                        default="/data/result/submission.json", help="Output file path")
-    parser.add_argument("--weight", metavar="W", type=str,
-                        default="pretrained_densenet121", help="Weight path")
-    args = parser.parse_args()
-
-    # Make prediction
-    input_path = args.input
-    output_path = args.output
-
+def run_prediction(input_path, output_path, weight):
     if output_path.split(".")[-1] != "json":
         raise ValueError("Output file should be json format")
 
@@ -336,7 +322,7 @@ if __name__ == "__main__":
     # Create submission.json
     submission = []
     idx = 0
-    predictor = Prediction(get_inference_model(args.weight))
+    predictor = Prediction(get_inference_model(weight))
 
     print("Start predict...")
     start = datetime.datetime.now()
@@ -370,3 +356,24 @@ if __name__ == "__main__":
         json.dump(submission, f, indent=2)
 
     print("Submission saved at {}".format(output_path))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Traffic sign detection')
+    parser.add_argument("--input",
+                        metavar="I", type=str, default="/data/images",
+                        help="Path to input images")
+    parser.add_argument("--output", metavar="O", type=str,
+                        default="/data/result/submission.json", help="Output file path")
+    parser.add_argument("--weight", metavar="W", type=str,
+                        default="pretrained_densenet121", help="Weight path")
+    args = parser.parse_args()
+
+    # Make prediction
+    input_path = args.input
+    output_path = args.output
+    weight = args.weight
+
+    run_prediction(input_path, output_path, weight)
+
+    
