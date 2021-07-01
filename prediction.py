@@ -313,7 +313,7 @@ if __name__ == "__main__":
                         help="Path to input images")
     parser.add_argument("--output", dest="output_path", metavar="O", type=str,
                         default="/data/result/submission.json", help="Output file path")
-    parser.add_argument("--weight", dest="weight_path", metadata="W", type=str,
+    parser.add_argument("--weight", dest="weight_path", metavar="W", type=str,
                         default="pretrained_densenet121", help="Weight path")
     args = parser.parse_args()
 
