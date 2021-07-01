@@ -187,7 +187,7 @@ def visualize_detections(
 ):
     """Visualize Detections"""
     image = np.array(image, dtype=np.uint8)
-    plt.figure(figsize)
+    plt.figure(figsize=figsize)
 
     plt.axis("off")
     plt.imshow(image)
