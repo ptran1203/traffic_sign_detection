@@ -341,7 +341,7 @@ def run_prediction(input_path, output_path, weight):
             score = scores[i]
             cls = classes[i]
             submission.append({
-                "image_id": data_info[idx]["id"],
+                "image_id": file_path,
                 "category_id": int(cls),
                 "bbox": [float(z) for z in xywh],
                 "score": float(score),
