@@ -1,13 +1,10 @@
 import json
-import pandas as pd
 import numpy as np
 import tensorflow as tf
 import model as m
 import data_processing
 import losses
 import utils
-import datetime
-import os
 import argparse
 
 parser = argparse.ArgumentParser(description='Traffic sign detection')
@@ -62,10 +59,7 @@ dataset = dataset.map(
 dataset = dataset.apply(tf.data.experimental.ignore_errors())
 dataset = dataset.prefetch(autotune)
 
-val_size = 500
-train_size = 4500 - val_size
-train_data = dataset.take(train_size)
-val_data = dataset.skip(train_size) 
+train_size = 4500
 train_steps_per_epoch = train_size // batch_size
 train_steps = 6 * 10000
 epochs = train_steps // train_steps_per_epoch
@@ -94,7 +88,7 @@ model.compile(optimizer=optimizer, loss=losses.RetinaNetLoss(num_classes))
 model.fit(np.random.rand(1, 896, 2304, 3), np.random.rand(1, 386694, 5))
 utils.try_ignore_error(model.load_weights, WEIGHT_FILE)
 
-H = model.fit(train_data.repeat(),
+H = model.fit(dataset.repeat(),
               validation_data=val_data,
               epochs=epochs,
               steps_per_epoch=train_steps_per_epoch,

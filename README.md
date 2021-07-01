@@ -10,6 +10,9 @@ Start with [Colab](https://github.com/ptran1203/traffic_sign_detection/blob/main
 + Train: https://dl.challenge.zalo.ai/traffic-sign-detection/data/za_traffic_2020.zip
 + Test: https://dl.challenge.zalo.ai/traffic-sign-detection/data/traffic_private.zip -->
 
+## Dataset
+
+https://www.kaggle.com/phhasian0710/za-traffic-2020/download
 ## Method
 After taking a quick look at the dataset, we can see that there are many small signs. Which makes the model hard to detect them. One of the possible methods in this scenario is [Image Tiling](https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Unel_The_Power_of_Tiling_for_Small_Object_Detection_CVPRW_2019_paper.pdf)
 
