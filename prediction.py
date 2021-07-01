@@ -246,7 +246,7 @@ def get_inference_model(weight_path):
     model = m.RetinaNet(num_of_classes, backbone="densenet121")
     model.compile(optimizer="adam", loss=losses.RetinaNetLoss(num_of_classes))
     model.build((1, None, None, 3))
-    image = tf.keras.layers.InputLayer(input_shape=[None, None, 3], name="image")
+    image = tf.keras.Input(shape=[None, None, 3], name="image")
     model.load_weights(weight_path)
     predictions = model(image, training=False)
     detections = m.DecodePredictions(confidence_threshold=0.5,
