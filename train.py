@@ -86,7 +86,7 @@ backbone = "densenet121"
 
 model = m.RetinaNet(num_classes, backbone=backbone)
 model.compile(optimizer=optimizer, loss=losses.RetinaNetLoss(num_classes))
-model.fit(np.random.rand(1, 896, 2304, 3), np.random.rand(1, 386694, 5))
+model.build((1, None, None, 3))
 utils.try_ignore_error(model.load_weights, WEIGHT_FILE)
 
 H = model.fit(train_data.repeat(),
