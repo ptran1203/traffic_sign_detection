@@ -308,18 +308,18 @@ def combine_prediction(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Traffic sign detection')
-    parser.add_argument("--input", dest="input_path",
+    parser.add_argument("--input",
                         metavar="I", type=str, default="/data/images",
                         help="Path to input images")
-    parser.add_argument("--output", dest="output_path", metavar="O", type=str,
+    parser.add_argument("--output", metavar="O", type=str,
                         default="/data/result/submission.json", help="Output file path")
-    parser.add_argument("--weight", dest="weight_path", metavar="W", type=str,
+    parser.add_argument("--weight", metavar="W", type=str,
                         default="pretrained_densenet121", help="Weight path")
     args = parser.parse_args()
 
     # Make prediction
-    input_path = args.input_path
-    output_path = args.output_path
+    input_path = args.input
+    output_path = args.output
 
     if output_path.split(".")[-1] != "json":
         raise ValueError("Output file should be json format")
