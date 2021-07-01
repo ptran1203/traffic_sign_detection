@@ -11,6 +11,7 @@ import argparse
 import datetime
 import glob
 import cv2
+from tqdm import tqdm
 
 try:
     from google.colab.patches import cv2_imshow
@@ -321,12 +322,11 @@ def run_prediction(input_path, output_path, weight):
 
     # Create submission.json
     submission = []
-    idx = 0
     predictor = Prediction(get_inference_model(weight))
 
     print("Start predict...")
     start = datetime.datetime.now()
-    for file_path in image_files:
+    for file_path in tqdm(image_files):
         image = cv2.imread(file_path)[..., ::-1]
         image, boxes, scores, classes = predictor.detect_single_image(image)
         if not isinstance(boxes, list):
@@ -346,9 +346,6 @@ def run_prediction(input_path, output_path, weight):
                 "bbox": [float(z) for z in xywh],
                 "score": float(score),
             })
-
-        utils._print_progress("{}/{}".format(idx, 585))
-        idx += 1
 
     print("Predict in {}".format(datetime.datetime.now() - start))
 
