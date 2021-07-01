@@ -12,15 +12,7 @@ import datetime
 import glob
 import cv2
 from tqdm import tqdm
-
-try:
-    from google.colab.patches import cv2_imshow
-except ImportError:
-    try:
-        import cv2.imshow as cv2_imshow
-    except ImportError:
-        def cv2_imshow(img):
-            return
+from utils import visualize_detections
 
 class Prediction:
     def __init__(self,
@@ -307,7 +299,10 @@ def combine_prediction(
             tf.gather(classes, selected_indices))
 
 
-def run_prediction(input_path, output_path, weight):
+def run_prediction(input_path, output_path, weight, save_dir):
+    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs("/".join(output_path.split("/")[:-1]), exist_ok=True)
+
     if output_path.split(".")[-1] != "json":
         raise ValueError("Output file should be json format")
 
@@ -324,7 +319,6 @@ def run_prediction(input_path, output_path, weight):
     submission = []
     predictor = Prediction(get_inference_model(weight))
 
-    print("Start predict...")
     start = datetime.datetime.now()
     for file_path in tqdm(image_files):
         image = cv2.imread(file_path)[..., ::-1]
@@ -333,6 +327,10 @@ def run_prediction(input_path, output_path, weight):
             boxes = boxes.numpy()
             scores = scores.numpy()
             classes = classes.numpy()
+
+        if save_dir:
+            save_path = os.path.join(save_dir, file_path.split("/")[-1])
+            visualize_detections(image, boxes, classes, scores, save_path=save_path)
 
         for i in range(len(boxes)):
             box = boxes[i]
@@ -364,13 +362,8 @@ if __name__ == "__main__":
                         default="/data/result/submission.json", help="Output file path")
     parser.add_argument("--weight", metavar="W", type=str,
                         default="pretrained_densenet121", help="Weight path")
+    parser.add_argument("--save-dir", type=str, default="/content/infernece_images")
+
     args = parser.parse_args()
 
-    # Make prediction
-    input_path = args.input
-    output_path = args.output
-    weight = args.weight
-
-    run_prediction(input_path, output_path, weight)
-
-    
+    run_prediction(args.input, args.output, args.weight, args.save_dir)

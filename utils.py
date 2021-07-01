@@ -183,7 +183,7 @@ def compute_iou(boxes1, boxes2):
 
 def visualize_detections(
     image, boxes, classes, scores, figsize=(15, 15), linewidth=2, color=[1, 0, 0],
-    box_true=None, label_true=None
+    box_true=None, label_true=None, save_path=''
 ):
     """Visualize Detections"""
     image = np.array(image, dtype=np.uint8)
@@ -220,7 +220,12 @@ def visualize_detections(
                 edgecolor=[1,1,1], linewidth=3
             )
             ax.add_patch(patch)
-    plt.show()
+    
+    if save_path:
+        plt.savefig(save_path)
+    else:
+        plt.show()
+
     return ax
 
 

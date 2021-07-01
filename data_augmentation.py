@@ -57,26 +57,3 @@ def random_gaussian_blur(img, prob=0.9):
         return tf.cast(img[0], dtype=tf.uint8)
 
     return img
-
-
-# class Augmentor:
-#     def __init__(
-#         self,
-#         blur=0.8,
-#         horizontal_flip=0.5,
-#         brightness=0.5,
-#         contrast=0.5
-#     ):
-
-#     self.blur = blur
-#     self.horizontal_flip = horizontal_flip
-#     self.brightness = brightness
-#     self.contrast = contrast
-
-#     def augment(self, image, boxes, labels):
-#         image, boxes = random_flip_horizontal(image, boxes, self.horizontal_flip)
-#         image = random_adjust_brightness(image, self.brightness)
-#         image = random_adjust_contrast(image, self.contrast)
-#         image = random_gaussian_blur(image, self.blur)
-
-#         return image, boxes, labels
