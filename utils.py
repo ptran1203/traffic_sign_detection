@@ -187,7 +187,8 @@ def visualize_detections(
 ):
     """Visualize Detections"""
     image = np.array(image, dtype=np.uint8)
-    plt.figure(figsize=figsize)
+    plt.figure(figsize)
+
     plt.axis("off")
     plt.imshow(image)
     ax = plt.gca()
@@ -222,7 +223,7 @@ def visualize_detections(
             ax.add_patch(patch)
     
     if save_path:
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches='tight')
     else:
         plt.show()
 

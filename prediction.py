@@ -1,7 +1,6 @@
 import math
 import tensorflow as tf
 import utils
-import data_processing
 import os
 import model as m
 import losses
@@ -13,6 +12,16 @@ import glob
 import cv2
 from tqdm import tqdm
 from utils import visualize_detections
+
+LABEL_MAP = {
+    1: "No entry",
+    2: "No parking / waiting",
+    3: "No turning",
+    4: "Max Speed",
+    5: "Other prohibition signs",
+    6: "Warning",
+    7: "Mandatory",
+}
 
 class Prediction:
     def __init__(self,
@@ -321,8 +330,9 @@ def run_prediction(input_path, output_path, weight, save_dir):
 
     start = datetime.datetime.now()
     for file_path in tqdm(image_files):
-        image = cv2.imread(file_path)[..., ::-1]
-        image, boxes, scores, classes = predictor.detect_single_image(image)
+        image, boxes, scores, classes = predictor.detect_single_image(
+            cv2.imread(file_path)[..., ::-1]
+        )
         if not isinstance(boxes, list):
             boxes = boxes.numpy()
             scores = scores.numpy()
@@ -330,7 +340,10 @@ def run_prediction(input_path, output_path, weight, save_dir):
 
         if save_dir:
             save_path = os.path.join(save_dir, file_path.split("/")[-1])
-            visualize_detections(image, boxes, classes, scores, save_path=save_path)
+            cls_name = [
+                LABEL_MAP[int(x)] for x in classes
+            ]
+            visualize_detections(image, boxes, cls_name, scores, save_path=save_path)
 
         for i in range(len(boxes)):
             box = boxes[i]
