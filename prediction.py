@@ -243,9 +243,9 @@ class Prediction:
         return image, all_boxes, all_scores, all_classes
 
 
-def get_inference_model(weight_path):
+def get_inference_model(weight_path, backbone="resnet50"):
     num_of_classes = 7
-    model = m.RetinaNet(num_of_classes, backbone="densenet121")
+    model = m.RetinaNet(num_of_classes, backbone=backbone)
     model.compile(optimizer="adam", loss=losses.RetinaNetLoss(num_of_classes))
     model.build((1, None, None, 3))
     image = tf.keras.Input(shape=[None, None, 3], name="image")
@@ -309,6 +309,7 @@ def combine_prediction(
 
 
 def run_prediction(input_path, output_path, weight, save_dir):
+    backbone = weight.split("_")[-1].replace(".h5", "")
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs("/".join(output_path.split("/")[:-1]), exist_ok=True)
 
@@ -326,7 +327,7 @@ def run_prediction(input_path, output_path, weight, save_dir):
 
     # Create submission.json
     submission = []
-    predictor = Prediction(get_inference_model(weight))
+    predictor = Prediction(get_inference_model(weight, backbone))
 
     start = datetime.datetime.now()
     for file_path in tqdm(image_files):
