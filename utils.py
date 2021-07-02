@@ -32,14 +32,6 @@ def get_img(path, width=None):
     return img
 
 
-def draw_bbox(img, coordinates, text="face", color=(158, 0, 148)):
-    "The pixcel's range should be [0, 255]"
-    x, y, w, h = coordinates
-    cv2.rectangle(img, (x, y), (x + w, y + h), color, 1)
-    # cv2.rectangle(img, (x, y), (x + w, y - 25), color, -1)
-    return cv2.putText(img, text, (x + w, y - 10), 0, 0.5, (255, 255, 255))
-
-
 def resize_and_pad_image(
     image,
     min_side=512,
@@ -241,44 +233,3 @@ def try_ignore_error(func, *argv):
         func(*argv)
     except Exception as e:
         print("WARN: ", e)
-
-
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
-
-    session = requests.Session()
-
-    response = session.get(URL, params={"id": id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {"id": id, "confirm": token}
-        response = session.get(URL, params=params, stream=True)
-
-    save_response_content(response, destination)
-
-
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith("download_warning"):
-            return value
-
-    return None
-
-
-def _print_progress(msg):
-    sys.stdout.write("\r")
-    sys.stdout.write(msg)
-    sys.stdout.flush()
-
-
-def save_response_content(response, destination):
-    CHUNK_SIZE = 32768
-    total_size = 0
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:  # filter out keep-alive new chunks
-                f.write(chunk)
-                total_size += CHUNK_SIZE
-                _print_progress("Fetching object to {} ... {:.2f} Mb".format(destination, total_size / (1e6)))

@@ -109,6 +109,7 @@ class RetinaNet(keras.Model):
 
     def __init__(self, num_classes, backbone=None, weight=None, **kwargs):
         super(RetinaNet, self).__init__(name="RetinaNet", **kwargs)
+        self.backbone_name = backbone
         self.fpn = FeaturePyramid(backbone, weight)
         self.num_classes = num_classes
 

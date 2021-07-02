@@ -11,6 +11,7 @@ from utils import (
 )
 import math
 import os
+from tqdm import tqdm
 
 image_feature_description = {
     "bbox": tf.io.FixedLenFeature([], tf.string),
@@ -72,12 +73,11 @@ def image_example(image_string, label, bbox):
 
 
 def write_tfrecords(data, file_path, train_dir):
-    count = 0
     if train_dir.endswith("images"):
         train_dir = train_dir.replace("images", "")
 
     with tf.io.TFRecordWriter(file_path) as writer:
-        for img_info in data:
+        for img_info in tqdm(data):
             ipath = "{}images/{}.png".format(train_dir, img_info["id"])
             image_string = open(ipath, "rb").read()
             tf_example = image_example(
@@ -86,9 +86,6 @@ def write_tfrecords(data, file_path, train_dir):
                 np.array(img_info["bbox"]).tobytes(),
             )
             writer.write(tf_example.SerializeToString())
-            count += 1
-            if count % 100 == 0:
-                print(count, "/", len(data))
 
 class DataProcessing:
     def __init__(self, origin_width=1622, origin_height=626 , width=400,
