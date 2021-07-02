@@ -87,3 +87,7 @@ def main(args):
                 epochs=epochs,
                 steps_per_epoch=train_steps_per_epoch,
                 callbacks=callbacks_list)
+
+
+if __name__ == '__main__':
+    main(parse_args())
