@@ -56,8 +56,8 @@ python3 train.py --input {image_dir}\
 ```bash
 python3 prediction.py --input {image_dir}\
                       --output submission.json\
-                      --weight weights/weight_dense.h5\
-                      --save-dir /content/inference_images
+                      --weight weights/weight_resnet50.h5\   # weight file should has format weight_{backbone}.h5
+                      --save-dir /content/inference_images   # or "" if you dont want to save images
 ```
 
 ## Inference result
