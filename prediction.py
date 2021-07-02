@@ -144,7 +144,7 @@ class Prediction:
         sboxes, sscores, sclasses = [], [], []
 
         if not crop_sizes:
-            crop_sizes = [1024, 1280, 1420]
+            crop_sizes = [1024]
 
         detected = False
         if tiling:
@@ -287,8 +287,12 @@ def combine_prediction(
             tf.gather(classes, selected_indices))
 
 
-def run_prediction(input_path, output_path, weight, save_dir):
+def run_prediction(args):
+    input_path, output_path, weight, save_dir = (
+        args.input_path, args.output_path, args.weight, args.save_dir)
+
     backbone = weight.split("_")[-1].replace(".h5", "")
+    crop_sizes = list(map(int, args.scales.split(",")))
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs("/".join(output_path.split("/")[:-1]), exist_ok=True)
 
@@ -311,7 +315,9 @@ def run_prediction(input_path, output_path, weight, save_dir):
     start = datetime.datetime.now()
     for file_path in tqdm(image_files):
         image, boxes, scores, classes = predictor.detect_single_image(
-            cv2.imread(file_path)[..., ::-1]
+            cv2.imread(file_path)[..., ::-1],
+            crop_sizes=crop_sizes,
+            tiling=args.tiling
         )
         if not isinstance(boxes, list):
             boxes = boxes.numpy()
@@ -356,7 +362,11 @@ if __name__ == "__main__":
     parser.add_argument("--weight", metavar="W", type=str,
                         default="pretrained_densenet121", help="Weight path")
     parser.add_argument("--save-dir", type=str, default="/content/infernece_images")
+    parser.add_argument("--tiling", action="store_true")
+    parser.add_argument("--scale", type=str, default="1024", help="Separated by comma ','")
 
     args = parser.parse_args()
 
-    run_prediction(args.input, args.output, args.weight, args.save_dir)
+    print(args)
+
+    run_prediction(args)
