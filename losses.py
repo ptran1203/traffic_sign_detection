@@ -51,7 +51,7 @@ class RetinaNetLoss(tf.losses.Loss):
     """Wrapper to combine both the losses"""
 
     def __init__(self, num_classes=80, alpha=0.25,
-                gamma=2.0, delta=1.0, label_smoothing=True,
+                gamma=2.0, delta=1.0, label_smoothing=False,
                 ):
         super(RetinaNetLoss, self).__init__(reduction="auto", name="RetinaNetLoss")
         self._clf_loss = RetinaNetClassificationLoss(alpha, gamma, label_smoothing)
