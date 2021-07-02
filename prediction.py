@@ -289,7 +289,7 @@ def combine_prediction(
 
 def run_prediction(args):
     input_path, output_path, weight, save_dir = (
-        args.input_path, args.output_path, args.weight, args.save_dir)
+        args.input, args.output, args.weight, args.save_dir)
 
     backbone = weight.split("_")[-1].replace(".h5", "")
     crop_sizes = list(map(int, args.scales.split(",")))
