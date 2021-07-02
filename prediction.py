@@ -363,7 +363,7 @@ if __name__ == "__main__":
                         default="pretrained_densenet121", help="Weight path")
     parser.add_argument("--save-dir", type=str, default="/content/infernece_images")
     parser.add_argument("--tiling", action="store_true")
-    parser.add_argument("--scale", type=str, default="1024", help="Separated by comma ','")
+    parser.add_argument("--scales", type=str, default="1024", help="Separated by comma ','")
 
     args = parser.parse_args()
 
