@@ -1,3 +1,4 @@
+from genericpath import exists
 import json
 import tensorflow as tf
 import model as m
@@ -26,6 +27,7 @@ def parse_args():
 def main(args):
     TFRECORDS_FILE = "./images.tfrecords"
     metadata = json.load(open("./train_traffic_sign_dataset.json", "r"))
+    os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     if args.force_tfrec or not os.path.isfile(TFRECORDS_FILE):
         print("Create tfrecords dataset")
