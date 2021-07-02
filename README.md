@@ -45,7 +45,10 @@ Data augmentation used for trainning includes:
 ## Trainning
 
 ```bash
-python3 train.py --input [path to training images]
+python3 train.py --input {image_dir}\
+                  --backbone resnet50\
+                  --batch-size 4\
+                  --checkpoint-dir /content/weights
 ```
 
 ## Inference
