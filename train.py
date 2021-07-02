@@ -21,6 +21,7 @@ def parse_args():
     parser.add_argument("--n-classes", type=int, default=7)
     parser.add_argument("--checkpoint-dir", type=str, default='weights')
     parser.add_argument("--force-tfrec", action='store_true')
+    parser.add_argument("--debug-samples", type=int, default=0)
 
     return parser.parse_args()
 
@@ -57,7 +58,7 @@ def main(args):
     dataset = dataset.apply(tf.data.experimental.ignore_errors())
     dataset = dataset.prefetch(autotune)
 
-    train_size = 4500
+    train_size = args.debug_samples or 4500
     train_data = dataset
     train_steps_per_epoch = train_size // batch_size
     train_steps = 6 * 10000
