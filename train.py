@@ -26,7 +26,7 @@ def parse_args():
     return parser.parse_args()
 
 def main(args):
-    TFRECORDS_FILE = "./images.tfrecords"
+    TFRECORDS_FILE = "/tmp/images.tfrecords"
     metadata = json.load(open("./train_traffic_sign_dataset.json", "r"))
     os.makedirs(args.checkpoint_dir, exist_ok=True)
 
